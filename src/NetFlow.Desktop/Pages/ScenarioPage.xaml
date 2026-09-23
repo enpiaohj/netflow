@@ -8,26 +8,38 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="70"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="80"/>
-                    <ColumnDefinition Width="180"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="目标主机" VerticalAlignment="Center"/>
-                <TextBox Grid.Column="1" x:Name="TargetInput" Style="{StaticResource InputStyle}"
-                         Margin="0,0,10,0" Text="dc01.corp.example.com"/>
-                <TextBlock Grid.Column="2" Text="域" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <TextBox Grid.Column="3" x:Name="DomainInput" Style="{StaticResource InputStyle}"
-                         Margin="0,0,10,0" Text="corp.example.com"/>
-                <CheckBox Grid.Column="4" x:Name="CaptureToggle" Content="同时抓包"
-                          VerticalAlignment="Center" Margin="0,0,14,0"/>
-                <Button Grid.Column="5" x:Name="RunButton" Content="开始诊断"
-                        Style="{StaticResource PrimaryButtonStyle}" Click="Run_Click"/>
-            </Grid>
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="180"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="目标主机" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" x:Name="TargetInput" Style="{StaticResource InputStyle}"
+                             Margin="0,0,10,0" KeyDown="TargetInput_KeyDown"/>
+                    <TextBlock Grid.Column="2" Text="域" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <TextBox Grid.Column="3" x:Name="DomainInput" Style="{StaticResource InputStyle}"
+                             Margin="0,0,14,0"/>
+                    <CheckBox Grid.Column="4" x:Name="CaptureToggle" Content="同时抓包"
+                              VerticalAlignment="Center" Margin="0,0,14,0"/>
+                    <Button Grid.Column="5" x:Name="RunButton" Content="开始诊断"
+                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Click="Run_Click"/>
+                    <Button Grid.Column="6" x:Name="StopButton" Content="停止"
+                            Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
+                            Click="Stop_Click"/>
+                </Grid>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Text="目标主机（IP 或域名）｜域（用于 SRV/SPN 类查询占位 {domain}）"
+                               FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                    <TextBlock x:Name="ProgressText" Text="" Margin="14,0,0,0"
+                               FontSize="12" Foreground="{StaticResource PrimaryBrush}"/>
+                </StackPanel>
+            </StackPanel>
         </Border>
 
         <Grid Grid.Row="1">

@@ -1,15 +1,19 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using NetFlow.Application;
 using NetFlow.Desktop.Services;
-using System.IO;
 
 namespace NetFlow.Desktop.Pages;
 
 public partial class HistoryPage : UserControl
 {
     public ObservableCollection<HistoryRow> Rows { get; } = [];
+
+    /// <summary>全量缓存，供搜索框实时过滤。</summary>
+    private List<HistoryRow> _all = [];
 
     public HistoryPage()
     {
@@ -20,28 +24,45 @@ public partial class HistoryPage : UserControl
 
     private async Task LoadAsync()
     {
-        Rows.Clear();
         var services = AppServices.Instance;
         if (!services.PersistenceReady || services.Repository is null) return;
         try
         {
             var runs = await services.Repository.ListRunsAsync(300).ConfigureAwait(true);
-            foreach (var r in runs)
+            _all = runs.Select(r => new HistoryRow
             {
-                Rows.Add(new HistoryRow
-                {
-                    StartLocal = r.Start?.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss") ?? "—",
-                    Target = r.Target,
-                    ScenarioName = r.ScenarioName ?? "自由测试",
-                    Id = r.Id,
-                });
-            }
+                StartLocal = r.Start?.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss") ?? "—",
+                Target = r.Target,
+                ScenarioName = r.ScenarioName ?? "自由测试",
+                Id = r.Id,
+                ScenarioId = r.ScenarioId,
+            }).ToList();
+            ApplyFilter();
         }
         catch (Exception ex)
         {
             AppLog.Warn($"历史记录加载失败：{ex.Message}");
         }
     }
+
+    /// <summary>搜索框按目标/场景/任务 ID 过滤（设计文档 06 页：搜索、复查、重跑、导出）。</summary>
+    private void ApplyFilter()
+    {
+        var keyword = SearchInput.Text.Trim();
+        Rows.Clear();
+        IEnumerable<HistoryRow> matched = _all;
+        if (keyword.Length > 0)
+        {
+            matched = _all.Where(r =>
+                r.Target.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                r.ScenarioName.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                r.Id.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        }
+        foreach (var row in matched)
+            Rows.Add(row);
+    }
+
+    private void Search_KeyUp(object sender, KeyEventArgs e) => ApplyFilter();
 
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await LoadAsync().ConfigureAwait(true);
 
@@ -70,6 +91,22 @@ public partial class HistoryPage : UserControl
         });
     }
 
+    private void Rerun_Click(object sender, RoutedEventArgs e)
+    {
+        if (HistoryGrid.SelectedItem is not HistoryRow row)
+        {
+            MessageBox.Show("请先选择一条记录", "NetFlow");
+            return;
+        }
+        if (string.IsNullOrEmpty(row.ScenarioId))
+        {
+            MessageBox.Show("该记录为自由测试，未关联场景模板，暂不支持重跑。", "NetFlow");
+            return;
+        }
+        NavigationState.PendingScenarioRun = (row.ScenarioId, row.Target);
+        NavigationState.Raise("scenario");
+    }
+
     private void OpenFolder_Click(object sender, RoutedEventArgs e)
     {
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -86,4 +123,5 @@ public record HistoryRow
     public required string Target { get; init; }
     public required string ScenarioName { get; init; }
     public required string Id { get; init; }
+    public string? ScenarioId { get; init; }
 }

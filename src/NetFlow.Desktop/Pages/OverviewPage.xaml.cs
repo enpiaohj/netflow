@@ -31,6 +31,15 @@ public partial class OverviewPage : UserControl
                 AppLog.Warn($"总览页数据加载失败：{ex.Message}");
             }
         };
+
+        TargetInput.GotFocus += (_, _) =>
+        {
+            if (TargetInput.Text == PlaceholderText) TargetInput.Clear();
+        };
+        TargetInput.LostFocus += (_, _) =>
+        {
+            if (TargetInput.Text.Length == 0) TargetInput.Text = PlaceholderText;
+        };
     }
 
     private async Task LoadAdaptersAsync()
@@ -74,18 +83,26 @@ public partial class OverviewPage : UserControl
         }
     }
 
+    private const string PlaceholderText = "输入 IP、域名或服务器名称";
+
     private void TargetInput_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && TargetInput.Text is { Length: > 0 } t && t != "输入 IP、域名或服务器名称")
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
             QuickTest_Click(sender, e);
+        }
     }
 
     private void QuickTest_Click(object sender, RoutedEventArgs e)
     {
         var target = TargetInput.Text.Trim();
-        if (target.Length == 0) return;
-        NavigationState.PendingQuickTestTarget = IPAddress.TryParse(target, out _)
-            ? target : target;
+        if (target.Length == 0 || target == PlaceholderText)
+        {
+            TargetInput.Focus();
+            return;
+        }
+        NavigationState.PendingQuickTestTarget = target;
         NavigationState.Raise("quicktest");
     }
 
@@ -111,6 +128,9 @@ public static class NavigationState
 {
     public static event Action<string>? RequestNavigation;
     public static string? PendingQuickTestTarget { get; set; }
+
+    /// <summary>历史页"重跑"请求（场景模板 ID + 目标）。</summary>
+    public static (string ScenarioId, string Target)? PendingScenarioRun { get; set; }
 
     public static void Raise(string key) => RequestNavigation?.Invoke(key);
 }

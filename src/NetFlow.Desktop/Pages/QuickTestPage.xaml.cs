@@ -3,6 +3,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using NetFlow.Application;
 using NetFlow.Desktop.Services;
 using NetFlow.Domain;
 using NetFlow.Probes;
@@ -15,6 +17,9 @@ public partial class QuickTestPage : UserControl
     public ObservableCollection<ResultRow> Results { get; } = [];
 
     private CancellationTokenSource? _cts;
+
+    /// <summary>每次运行产生的探针结果，用于结果行与证据联动。</summary>
+    private readonly List<ProbeRun> _runs = [];
 
     public QuickTestPage()
     {
@@ -30,20 +35,52 @@ public partial class QuickTestPage : UserControl
         };
     }
 
-    private void TabChanged(object sender, RoutedEventArgs e) { /* 类型选择在启动时读取 */ }
+    private string CurrentTab =>
+        new[] { TabTcpUdp, TabDns, TabHttp, TabPing, TabNtp }
+            .FirstOrDefault(rb => rb.IsChecked == true)?.Tag?.ToString() ?? "tcpudp";
+
+    private void TargetInput_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            Start_Click(sender, e);
+        }
+    }
 
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
+        InlineError.Text = "";
         var target = TargetInput.Text.Trim();
         if (target.Length == 0)
         {
-            MessageBox.Show("请输入目标地址", "NetFlow");
+            InlineError.Text = "请输入目标地址";
+            TargetInput.Focus();
             return;
         }
-        var port = int.TryParse(PortInput.Text, out var p) ? p : 445;
-        var timeout = TimeSpan.FromSeconds(double.TryParse(TimeoutInput.Text, out var s) ? s : 3);
 
-        if (!IPAddress.TryParse(target, out var ip))
+        if (!int.TryParse(PortInput.Text, out var port) || port is < 1 or > 65535)
+        {
+            InlineError.Text = "端口需为 1–65535";
+            PortInput.Focus();
+            return;
+        }
+
+        if (!double.TryParse(TimeoutInput.Text, out var timeoutSec) || timeoutSec is <= 0 or > 60)
+        {
+            InlineError.Text = "超时需为 0–60 秒";
+            TimeoutInput.Focus();
+            return;
+        }
+        var timeout = TimeSpan.FromSeconds(timeoutSec);
+
+        // 名称解析失败是常见输入问题：内联提示而非弹窗打断
+        IPAddress ip;
+        if (IPAddress.TryParse(target, out var direct))
+        {
+            ip = direct;
+        }
+        else
         {
             try
             {
@@ -51,154 +88,145 @@ public partial class QuickTestPage : UserControl
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"解析失败：{ex.Message}", "NetFlow");
+                InlineError.Text = $"名称解析失败：{ex.Message}";
                 return;
             }
         }
 
         StartButton.IsEnabled = false;
+        StopButton.IsEnabled = true;
         Results.Clear();
+        _runs.Clear();
+        DetailBox.Clear();
+        EvidenceTitle.Text = "观察事实与证据";
+        ResultTitle.Text = "测试中…";
         _cts = new CancellationTokenSource();
+        ActivityState.Begin(this, "quicktest", $"快速测试 {target}");
 
         var runId = RunId.New();
-        var tabs = FindTabRadioButtons();
-        string tab = tabs.FirstOrDefault(t => t.IsChecked == true)?.Tag as string ?? "tcpudp";
+        var request = new ProbeRequest
+        {
+            RunId = runId,
+            Parameters = new ProbeParameters
+            {
+                ProbeType = ProbeType.TcpConnect,
+                RequestedTarget = target,
+                Port = port,
+                Timeout = timeout,
+            },
+            CancellationToken = _cts.Token,
+        };
 
         try
         {
-            var request = new ProbeRequest
-            {
-                RunId = runId,
-                Parameters = new ProbeParameters
-                {
-                    ProbeType = ProbeType.TcpConnect,
-                    RequestedTarget = target,
-                    Port = port,
-                    Timeout = timeout,
-                },
-                CancellationToken = _cts.Token,
-            };
-
-            switch (tab)
+            switch (CurrentTab)
             {
                 case "tcpudp":
-                    await RunTcpUdpAsync(ip, port, request).ConfigureAwait(true);
+                    ResultTitle.Text = $"测试结果：TCP {port} / UDP {port}";
+                    AddRun(await new TcpConnectProbe().ExecuteAsync(ip, port, request).ConfigureAwait(true));
+                    AddRun(await new UdpProbe().ExecuteAsync(
+                        ip, port, new UdpPayload { Text = "NetFlow probe\n", EncodingName = "utf-8" },
+                        request).ConfigureAwait(true));
                     break;
                 case "dns":
-                    await RunDnsAsync(target, request).ConfigureAwait(true);
+                {
+                    ResultTitle.Text = $"测试结果：DNS 解析 {target}";
+                    var dnsServer = FirstSystemDns();
+                    if (dnsServer is null)
+                    {
+                        InlineError.Text = "未找到系统 DNS 服务器";
+                        return;
+                    }
+                    foreach (var type in new[] { DnsRecordType.A, DnsRecordType.AAAA })
+                    {
+                        AddRun(await new DnsProbe().ExecuteAsync(dnsServer, target, type, request)
+                            .ConfigureAwait(true));
+                    }
                     break;
+                }
                 case "http":
-                    await RunHttpAsync(target, request).ConfigureAwait(true);
+                {
+                    ResultTitle.Text = $"测试结果：HTTP/TLS {target}";
+                    var uri = target.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                        ? new Uri(target)
+                        : new Uri($"https://{target}/");
+
+                    AddRun(await new HttpProbe().ExecuteAsync(uri, request).ConfigureAwait(true));
+
+                    if (uri.Scheme == "https")
+                    {
+                        var tlsIp = (await Dns.GetHostAddressesAsync(uri.Host).ConfigureAwait(true)).First();
+                        AddRun(await new TlsProbe().ExecuteAsync(
+                            tlsIp, uri.Port == 0 ? 443 : uri.Port, uri.Host, request).ConfigureAwait(true));
+                    }
                     break;
+                }
                 case "ping":
-                    await RunPingAsync(ip, request).ConfigureAwait(true);
+                    ResultTitle.Text = $"测试结果：ICMP + 路径 {ip}";
+                    AddRun(await new IcmpProbe().ExecuteAsync(ip, 4, request).ConfigureAwait(true));
+                    AddRun(await new IcmpProbe().TraceRouteAsync(ip, 10, 1, request).ConfigureAwait(true));
                     break;
                 case "ntp":
-                    await RunNtpAsync(ip, request).ConfigureAwait(true);
-                    break;
-                default:
-                    MessageBox.Show("该类型将在后续版本提供", "NetFlow");
+                    ResultTitle.Text = $"测试结果：NTP {ip}";
+                    AddRun(await new NtpProbe().ExecuteAsync(ip, request).ConfigureAwait(true));
                     break;
             }
         }
+        catch (OperationCanceledException)
+        {
+            ResultTitle.Text = "测试结果（已取消）";
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("快速测试执行异常", ex);
+            InlineError.Text = $"执行异常：{ex.Message}";
+        }
         finally
         {
+            ActivityState.End(this);
             StartButton.IsEnabled = true;
+            StopButton.IsEnabled = false;
+            if (ResultTitle.Text == "测试中…")
+                ResultTitle.Text = "测试结果";
         }
     }
 
-    private async Task RunTcpUdpAsync(IPAddress ip, int port, ProbeRequest request)
+    private void Stop_Click(object sender, RoutedEventArgs e) => _cts?.Cancel();
+
+    /// <summary>登记结果：表格一行 + 证据缓存（行选中时展示对应证据）。</summary>
+    private void AddRun(ProbeRun run)
     {
-        ResultTitle.Text = $"测试结果：TCP {port} / UDP {port}";
-
-        var tcp = await new TcpConnectProbe().ExecuteAsync(ip, port, request).ConfigureAwait(true);
-        AddResult(tcp);
-
-        var udp = await new UdpProbe().ExecuteAsync(
-            ip, port, new UdpPayload { Text = "NetFlow probe\n", EncodingName = "utf-8" },
-            request).ConfigureAwait(true);
-        AddResult(udp);
-    }
-
-    private async Task RunDnsAsync(string target, ProbeRequest request)
-    {
-        ResultTitle.Text = $"测试结果：DNS 解析 {target}";
-        var dnsServer = await Task.FromResult(FirstSystemDns()) ?? IPAddress.Parse("127.0.0.1");
-        foreach (var type in new[] { DnsRecordType.A, DnsRecordType.AAAA })
-        {
-            var run = await new DnsProbe().ExecuteAsync(dnsServer, target, type, request)
-                .ConfigureAwait(true);
-            AddResult(run);
-        }
-    }
-
-    private async Task RunHttpAsync(string target, ProbeRequest request)
-    {
-        ResultTitle.Text = $"测试结果：HTTP/TLS {target}";
-        var uri = target.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-            ? new Uri(target)
-            : new Uri($"https://{target}/");
-
-        var httpRun = await new HttpProbe().ExecuteAsync(uri, request).ConfigureAwait(true);
-        AddResult(httpRun);
-
-        if (uri.Scheme == "https")
-        {
-            var tlsRun = await new TlsProbe().ExecuteAsync(
-                (await Dns.GetHostAddressesAsync(uri.Host).ConfigureAwait(true)).First(),
-                uri.Port == 0 ? 443 : uri.Port,
-                uri.Host, request).ConfigureAwait(true);
-            AddResult(tlsRun);
-        }
-    }
-
-    private async Task RunPingAsync(IPAddress ip, ProbeRequest request)
-    {
-        ResultTitle.Text = $"测试结果：ICMP + 路径 {ip}";
-        var ping = await new IcmpProbe().ExecuteAsync(ip, 4, request).ConfigureAwait(true);
-        AddResult(ping);
-
-        var trace = await new IcmpProbe().TraceRouteAsync(ip, 10, 1, request).ConfigureAwait(true);
-        AddResult(trace);
-    }
-
-    private async Task RunNtpAsync(IPAddress ip, ProbeRequest request)
-    {
-        ResultTitle.Text = $"测试结果：NTP {ip}";
-        var run = await new NtpProbe().ExecuteAsync(ip, request).ConfigureAwait(true);
-        AddResult(run);
-    }
-
-    private void AddResult(ProbeRun run)
-    {
-        var verdict = ConclusionEvaluator.Evaluate(run.Transport, run.Protocol);
+        _runs.Add(run);
         Results.Add(new ResultRow
         {
             Probe = run.Parameters.ProbeType.ToString(),
-            Level = LevelText(verdict.Level),
+            Level = UiText.LevelOf(run),
             Transport = run.Transport.ToString(),
             Protocol = run.Protocol.ToString(),
-            Elapsed = run.Elapsed is { } e ? $"{(int)e.TotalMilliseconds} ms" : "—",
+            Elapsed = UiText.Elapsed(run.Elapsed),
         });
-        DetailBox.AppendText($"== {run.Parameters.ProbeType}（结论：{LevelText(verdict.Level)}）==\n");
-        DetailBox.AppendText(verdict.Rationale + "\n");
-        foreach (var obs in run.Observations)
-            DetailBox.AppendText($"  {obs.ObservedUtc.LocalDateTime:HH:mm:ss.fff} {obs.Text}\n");
-        DetailBox.AppendText("\n");
-        DetailBox.ScrollToEnd();
     }
 
-    private static string LevelText(ConclusionLevel level) => level switch
+    /// <summary>选中结果行 → 证据面板只显示该探针的观察事实（结果与证据不混用）。</summary>
+    private void ResultRow_Selected(object sender, SelectionChangedEventArgs e)
     {
-        ConclusionLevel.Pass => "通过",
-        ConclusionLevel.Warning => "警告",
-        ConclusionLevel.Fail => "失败",
-        ConclusionLevel.Unconfirmed => "未确认",
-        ConclusionLevel.NotChecked => "未检查",
-        ConclusionLevel.Skipped => "跳过",
-        ConclusionLevel.Canceled => "已取消",
-        _ => level.ToString(),
-    };
+        if (ResultGrid.SelectedIndex < 0 || ResultGrid.SelectedIndex >= _runs.Count)
+            return;
+        var run = _runs[ResultGrid.SelectedIndex];
+        EvidenceTitle.Text = $"观察事实：{run.Parameters.ProbeType}";
+
+        var verdict = ConclusionEvaluator.Evaluate(run.Transport, run.Protocol);
+        DetailBox.Clear();
+        DetailBox.AppendText($"结论：{UiText.Level(verdict.Level)}\n{verdict.Rationale}\n");
+        if (verdict.Limitations.Count > 0)
+            DetailBox.AppendText($"限制：{string.Join("；", verdict.Limitations)}\n");
+        if (run.ProtocolDetail is not null)
+            DetailBox.AppendText($"协议：{run.ProtocolDetail}\n");
+        DetailBox.AppendText("\n");
+        foreach (var obs in run.Observations)
+            DetailBox.AppendText($"  {obs.ObservedUtc.LocalDateTime:HH:mm:ss.fff} {obs.Text}\n");
+        DetailBox.ScrollToEnd();
+    }
 
     private static IPAddress? FirstSystemDns()
     {
@@ -213,29 +241,6 @@ public partial class QuickTestPage : UserControl
             if (dns is not null) return dns;
         }
         return null;
-    }
-
-    private IEnumerable<RadioButton> FindTabRadioButtons()
-    {
-        // 类型标签在第二个卡片内；用视觉树搜索
-        return FindVisual<RadioButton>(this)
-            .Where(rb => rb.Tag is string t && t is "tcpudp" or "dns" or "http" or "ping" or "ntp" or "custom"
-                && rb.Name != "NavOverview");
-    }
-
-    private static IEnumerable<T> FindVisual<T>(System.Windows.Media.Visual root)
-        where T : System.Windows.Media.Visual
-    {
-        if (root is null) yield break;
-        var count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
-        for (int i = 0; i < count; i++)
-        {
-            if (System.Windows.Media.VisualTreeHelper.GetChild(root, i) is not System.Windows.Media.Visual child)
-                continue;
-            if (child is T typed) yield return typed;
-            foreach (var sub in FindVisual<T>(child))
-                yield return sub;
-        }
     }
 }
 

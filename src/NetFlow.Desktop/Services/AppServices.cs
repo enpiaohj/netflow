@@ -72,7 +72,7 @@ public sealed class AppServices
     /// <summary>容错写库：持久层不可用时提示一次并跳过，不抛出。</summary>
     public async Task SaveRunSafeAsync(Domain.DiagnosisRun run, CancellationToken ct = default)
     {
-        if (!PersistenceReady)
+        if (!PersistenceReady || Repository is null)
         {
             PublishStatus($"历史未保存：数据库不可用（{PersistenceError}）");
             return;

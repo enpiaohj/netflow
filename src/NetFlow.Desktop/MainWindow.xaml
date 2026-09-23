@@ -55,17 +55,30 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- 顶部状态栏：测试源/目标/抓包状态（设计文档 3.1 交互规范） -->
+            <!-- 顶部状态栏：任务状态（设计文档 3.1 交互规范） -->
             <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderLight}"
                     BorderThickness="0,0,0,1" Padding="16,8">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                         <TextBlock Text="状态：" Foreground="{StaticResource TextSecondary}"/>
                         <TextBlock x:Name="StatusText" Text="就绪"
                                    Foreground="{StaticResource TextPrimary}"/>
                     </StackPanel>
-                    <TextBlock x:Name="ElevatedText" HorizontalAlignment="Right"
-                               Foreground="{StaticResource TextSecondary}"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="ActivityButton" Visibility="Collapsed"
+                                Click="ActivityButton_Click" Cursor="Hand"
+                                Background="#FFF7ED" BorderBrush="#FED7AA"
+                                BorderThickness="1" Padding="10,3" Margin="0,0,14,0">
+                            <TextBlock x:Name="ActivityText" Text="● 运行中"
+                                       Foreground="#C2410C" FontSize="12"/>
+                        </Button>
+                        <TextBlock x:Name="ElevatedText"
+                                   Foreground="{StaticResource TextSecondary}"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 

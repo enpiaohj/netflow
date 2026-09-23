@@ -255,7 +255,7 @@ public sealed class DiagnosisRepository : IAsyncDisposable
 
     // ---- 查询 ----
 
-    public async Task<IReadOnlyList<(string Id, string Target, DateTimeOffset? Start, string? ScenarioName)>>
+    public async Task<IReadOnlyList<(string Id, string Target, DateTimeOffset? Start, string? ScenarioName, string? ScenarioId)>>
         ListRunsAsync(int limit = 200, CancellationToken ct = default)
     {
         // Microsoft.Data.Sqlite 的连接不支持并发使用：读路径同样经单写队列串行化
@@ -265,11 +265,11 @@ public sealed class DiagnosisRepository : IAsyncDisposable
             var cmd = _connection.CreateCommand();
             cmd.CommandText = """
                 SELECT id, requested_target, start_utc,
-                       COALESCE(scenario_name,'') FROM runs
+                       COALESCE(scenario_name,''), COALESCE(scenario_id,'') FROM runs
                 ORDER BY start_utc DESC LIMIT $lim
                 """;
             cmd.Parameters.AddWithValue("$lim", limit);
-            var result = new List<(string, string, DateTimeOffset?, string?)>();
+            var result = new List<(string, string, DateTimeOffset?, string?, string?)>();
             await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
             while (await reader.ReadAsync(ct).ConfigureAwait(false))
             {
@@ -279,7 +279,8 @@ public sealed class DiagnosisRepository : IAsyncDisposable
                     reader.GetString(0),
                     reader.GetString(1),
                     string.IsNullOrEmpty(startIso) ? null : DateTimeOffset.Parse(startIso),
-                    reader.IsDBNull(3) ? null : reader.GetString(3)));
+                    reader.IsDBNull(3) ? null : reader.GetString(3),
+                    reader.IsDBNull(4) ? null : reader.GetString(4)));
             }
             return result;
         }

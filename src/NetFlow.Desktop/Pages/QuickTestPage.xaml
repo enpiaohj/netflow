@@ -17,12 +17,12 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="110"/>
                         <ColumnDefinition Width="90"/>
-                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="目标地址" VerticalAlignment="Center"/>
                     <TextBox Grid.Column="1" x:Name="TargetInput" Style="{StaticResource InputStyle}"
-                             Margin="0,0,10,0"/>
+                             Margin="0,0,10,0" KeyDown="TargetInput_KeyDown"/>
                     <ComboBox Grid.Column="2" x:Name="PortInput" IsEditable="True" Margin="0,0,10,0">
                         <ComboBoxItem IsSelected="True">445</ComboBoxItem>
                         <ComboBoxItem>53</ComboBoxItem>
@@ -32,11 +32,19 @@
                         <ComboBoxItem>1433</ComboBoxItem>
                     </ComboBox>
                     <TextBox Grid.Column="3" x:Name="TimeoutInput" Text="3" Margin="0,0,10,0"/>
-                    <Button Grid.Column="5" x:Name="StartButton" Content="开始测试"
-                            Style="{StaticResource PrimaryButtonStyle}" Click="Start_Click"/>
+                    <Button Grid.Column="4" x:Name="StartButton" Content="开始测试"
+                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
+                            Click="Start_Click"/>
+                    <Button Grid.Column="5" x:Name="StopButton" Content="停止"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            IsEnabled="False" Click="Stop_Click"/>
                 </Grid>
-                <TextBlock Text="目标地址；端口；超时（秒）" FontSize="11"
-                           Foreground="{StaticResource TextSecondary}" Margin="0,6,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Text="目标地址｜端口｜超时（秒）。无响应显示“—”，不显示伪造 0ms。"
+                               FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                    <TextBlock x:Name="InlineError" Text="" Margin="14,0,0,0"
+                               FontSize="12" Foreground="{StaticResource StatusFail}"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 
@@ -44,12 +52,11 @@
         <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
             <StackPanel Orientation="Horizontal">
                 <RadioButton x:Name="TabTcpUdp" Content="TCP/UDP 端口" IsChecked="True"
-                             Margin="0,0,16,0" Checked="TabChanged" Tag="tcpudp"/>
-                <RadioButton Content="DNS 解析" Margin="0,0,16,0" Checked="TabChanged" Tag="dns"/>
-                <RadioButton Content="HTTP/TLS" Margin="0,0,16,0" Checked="TabChanged" Tag="http"/>
-                <RadioButton Content="Ping/路径" Margin="0,0,16,0" Checked="TabChanged" Tag="ping"/>
-                <RadioButton Content="NTP" Margin="0,0,16,0" Checked="TabChanged" Tag="ntp"/>
-                <RadioButton Content="自定义报文" Checked="TabChanged" Tag="custom"/>
+                             Margin="0,0,16,0" Tag="tcpudp"/>
+                <RadioButton x:Name="TabDns" Content="DNS 解析" Margin="0,0,16,0" Tag="dns"/>
+                <RadioButton x:Name="TabHttp" Content="HTTP/TLS" Margin="0,0,16,0" Tag="http"/>
+                <RadioButton x:Name="TabPing" Content="Ping/路径" Margin="0,0,16,0" Tag="ping"/>
+                <RadioButton x:Name="TabNtp" Content="NTP" Margin="0,0,16,0" Tag="ntp"/>
             </StackPanel>
         </Border>
 
@@ -64,7 +71,8 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" x:Name="ResultTitle" Text="测试结果"
                                Style="{StaticResource SectionTitleStyle}"/>
-                    <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0">
+                    <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0"
+                              SelectionChanged="ResultRow_Selected">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="探针" Binding="{Binding Probe}" Width="110"/>
                             <DataGridTextColumn Header="结论" Binding="{Binding Level}" Width="80"/>
@@ -78,7 +86,8 @@
 
             <Border Grid.Column="1" Style="{StaticResource CardStyle}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="观察事实与证据" Style="{StaticResource SectionTitleStyle}"/>
+                    <TextBlock DockPanel.Dock="Top" x:Name="EvidenceTitle" Text="观察事实与证据"
+                               Style="{StaticResource SectionTitleStyle}"/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <TextBox x:Name="DetailBox" IsReadOnly="True" TextWrapping="Wrap"
                                  BorderThickness="0" Background="Transparent"

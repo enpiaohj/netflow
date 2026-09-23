@@ -20,6 +20,17 @@ public partial class ScenarioPage : UserControl
         InitializeComponent();
         ResultGrid.ItemsSource = Rows;
         ReloadTemplates();
+        Loaded += (_, _) =>
+        {
+            if (NavigationState.PendingScenarioRun is { } rerun)
+            {
+                NavigationState.PendingScenarioRun = null;
+                TargetInput.Text = rerun.Target;
+                var items = (List<TemplateItem>)TemplateList.ItemsSource;
+                var idx = items.FindIndex(i => i.Id == rerun.ScenarioId);
+                if (idx >= 0) TemplateList.SelectedIndex = idx;
+            }
+        };
     }
 
     private void ReloadTemplates()
@@ -67,10 +78,13 @@ public partial class ScenarioPage : UserControl
         }
 
         RunButton.IsEnabled = false;
+        StopButton.IsEnabled = true;
         ExportButton.IsEnabled = false;
         Rows.Clear();
         EvidenceBox.Clear();
+        ProgressText.Text = "准备中…";
         _cts = new CancellationTokenSource();
+        ActivityState.Begin(this, "scenario", $"场景诊断 {target}");
 
         var request = new DiagnosisRequest
         {
@@ -95,10 +109,32 @@ public partial class ScenarioPage : UserControl
             : null;
         _lastRun = null;
 
-        var outcome = await services.Orchestrator.ExecuteAsync(
-            request,
-            services.PersistenceReady ? services.Repository : null,
-            capture, _cts.Token).ConfigureAwait(true);
+        DiagnosisOutcome outcome;
+        try
+        {
+            outcome = await services.Orchestrator.ExecuteAsync(
+                request,
+                services.PersistenceReady ? services.Repository : null,
+                capture, _cts.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            ProgressText.Text = "已取消";
+            return;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("场景诊断执行异常", ex);
+            ProgressText.Text = $"执行异常：{ex.Message}";
+            return;
+        }
+        finally
+        {
+            // 取消/异常路径在此统一恢复按钮状态（成功路径下方会再更新进度文本）
+            RunButton.IsEnabled = true;
+            StopButton.IsEnabled = false;
+            ExportButton.IsEnabled = true;
+        }
         _lastRun = outcome.Run;
         RenderRun(_lastRun);
 
@@ -108,8 +144,25 @@ public partial class ScenarioPage : UserControl
             _lastRun.Artifacts.Add(a);
         await services.SaveRunSafeAsync(_lastRun).ConfigureAwait(true);
 
-        RunButton.IsEnabled = true;
-        ExportButton.IsEnabled = true;
+        ProgressText.Text = _lastRun.TerminationReason is null
+            ? $"完成：{_lastRun.Probes.Count} 项检查"
+            : $"已终止：{_lastRun.TerminationReason}";
+    }
+
+    private async void Stop_Click(object sender, RoutedEventArgs e)
+    {
+        _cts?.Cancel();
+        ProgressText.Text = "取消中…";
+        await Task.CompletedTask.ConfigureAwait(true);
+    }
+
+    private void TargetInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Enter)
+        {
+            e.Handled = true;
+            Run_Click(sender, e);
+        }
     }
 
     private void RenderRun(DiagnosisRun run)
@@ -126,10 +179,10 @@ public partial class ScenarioPage : UserControl
             {
                 No = no++,
                 Name = p.Parameters.Extra.TryGetValue("__stepName", out var n) ? n : p.Parameters.ProbeType.ToString(),
-                Level = LevelText(verdict.Level),
+                Level = UiText.Level(verdict.Level),
                 Transport = p.Transport.ToString(),
                 Protocol = p.Protocol.ToString(),
-                Elapsed = p.Elapsed is { } e ? $"{(int)e.TotalMilliseconds} ms" : "—",
+                Elapsed = UiText.Elapsed(p.Elapsed),
             });
         }
 
