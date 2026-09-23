@@ -32,12 +32,12 @@ public sealed class NtpProbe : ProbeBase
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(timeout);
 
+        var t0 = DateTimeOffset.UtcNow; // 发送时刻（用于偏差估算）
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             await udp.SendAsync(request_, new System.Net.IPEndPoint(target, 123), timeoutCts.Token)
                 .ConfigureAwait(false);
-            var originLocalUtc = DateTimeOffset.UtcNow;
             var sendSw = sw.Elapsed;
 
             bool resetRetried = false;
@@ -73,7 +73,8 @@ public sealed class NtpProbe : ProbeBase
                     return run;
                 }
 
-                var offset = info.ServerTimeUtc - (originLocalUtc + (recvUtc - originLocalUtc) / 2);
+                // 估算偏差 = 服务器时间 −（t0 + 往返/2），单次采样仅供参考
+                var offset = info.ServerTimeUtc - (t0 + (recvUtc - t0) / 2);
                 run.Transport = TransportOutcome.Success;
                 run.Protocol = ProtocolOutcome.Success;
                 run.Stages =

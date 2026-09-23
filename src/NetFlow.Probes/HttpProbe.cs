@@ -136,12 +136,24 @@ public sealed class HttpProbe : ProbeBase
             }
             catch (HttpRequestException ex)
             {
-                run.Transport = ex.HttpRequestError switch
+                // 按底层套接字错误细分（HttpRequestError 只有粗分类）
+                var socketError = (ex.InnerException as SocketException)?.SocketErrorCode;
+                if (ex.HttpRequestError == HttpRequestError.ConnectionError &&
+                    socketError is not null)
                 {
-                    HttpRequestError.ConnectionError => TransportOutcome.Refused,
-                    HttpRequestError.SecureConnectionError => TransportOutcome.Success,
-                    _ => TransportOutcome.LocalError,
-                };
+                    run.Transport = ClassifySocketError(socketError.Value);
+                }
+                else
+                {
+                    run.Transport = ex.HttpRequestError switch
+                    {
+                        HttpRequestError.ConnectionError => TransportOutcome.Refused,
+                        HttpRequestError.SecureConnectionError => TransportOutcome.Success,
+                        HttpRequestError.NameResolutionError => TransportOutcome.NameResolutionFailed,
+                        _ => TransportOutcome.LocalError,
+                    };
+                }
+
                 if (run.Transport == TransportOutcome.Success)
                 {
                     // TLS 失败：TCP 可用，握手失败 —— 协议层错误
@@ -151,7 +163,7 @@ public sealed class HttpProbe : ProbeBase
                     FinishRun(run);
                     return run;
                 }
-                run.ErrorCode = ex.HttpRequestError.ToString();
+                run.ErrorCode = socketError?.ToString() ?? ex.HttpRequestError.ToString();
                 run.AddObservation(Observation.Now($"连接失败：{ex.Message}", DisplayName));
                 FinishRun(run);
                 return run;

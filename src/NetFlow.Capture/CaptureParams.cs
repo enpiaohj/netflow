@@ -31,8 +31,17 @@ public sealed record CaptureParams
 
     public string ToJson() => JsonSerializer.Serialize(this, JsonOpts);
 
-    public static CaptureParams? FromJson(string json) =>
-        JsonSerializer.Deserialize<CaptureParams>(json, JsonOpts);
+    public static CaptureParams? FromJson(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<CaptureParams>(json, JsonOpts);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -40,21 +49,52 @@ public sealed record CaptureParams
     };
 
     /// <summary>宿主侧参数校验。非法输入直接拒绝，不做默认修正。</summary>
-    public IReadOnlyList<string> Validate()
+    public IReadOnlyList<string> Validate(string? paramsFilePath = null)
     {
         var errors = new List<string>();
-        if (!System.Text.RegularExpressions.Regex.IsMatch(RunId, @"^[0-9a-fA-F-]{8,40}$"))
-            errors.Add("RunId 格式非法");
+
+        if (string.IsNullOrWhiteSpace(RunId) ||
+            !System.Text.RegularExpressions.Regex.IsMatch(RunId, @"^[0-9a-fA-F-]{8,40}$"))
+            errors.Add("RunId 格式非法（应为 8–40 位十六进制/连字符）");
+
+        if (TargetIp is not null &&
+            !System.Net.IPAddress.TryParse(TargetIp, out _))
+            errors.Add("TargetIp 不是合法 IP 地址");
+
         if (RingBufferMb is < 16 or > 1024)
             errors.Add("环形缓冲区超出允许范围 16–1024 MB");
         if (MaxDurationSeconds is < 10 or > 3600)
             errors.Add("最长采集时长超出允许范围 10–3600 秒");
         if (SnapLengthBytes is < 0 or > 1514)
             errors.Add("截断长度非法");
-        if (!Directory.Exists(WorkingDirectory))
+        if (string.IsNullOrWhiteSpace(WorkingDirectory) || !Directory.Exists(WorkingDirectory))
             errors.Add("工作目录不存在");
-        if (StopEventName.Length is 0 or > 200)
+        if (string.IsNullOrWhiteSpace(StopEventName) || StopEventName.Length > 200)
             errors.Add("停止事件名非法");
+
+        // 提权宿主的写入范围限定：参数文件必须位于工作目录内，
+        // 防止任意目录写入（设计文档 2.1：按任务 ID 写入限定工作目录）
+        if (paramsFilePath is not null &&
+            !string.IsNullOrWhiteSpace(WorkingDirectory) &&
+            Directory.Exists(WorkingDirectory))
+        {
+            string fullParams, fullWork;
+            try
+            {
+                fullParams = Path.GetFullPath(paramsFilePath);
+                fullWork = Path.GetFullPath(WorkingDirectory)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    + Path.DirectorySeparatorChar;
+            }
+            catch (Exception)
+            {
+                errors.Add("路径解析失败");
+                return errors;
+            }
+            if (!fullParams.StartsWith(fullWork, StringComparison.OrdinalIgnoreCase))
+                errors.Add("参数文件必须位于工作目录内（写入范围限定）");
+        }
+
         return errors;
     }
 }

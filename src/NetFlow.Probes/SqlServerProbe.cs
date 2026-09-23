@@ -8,16 +8,6 @@ using NetFlow.Domain;
 
 namespace NetFlow.Probes;
 
-/// <summary>SQL Server 探针结果分解（设计文档 4.7 SQL Server 模板：分步呈现）。</summary>
-public sealed record SqlProbeStageResult
-{
-    public bool BrowserDiscoveryAttempted { get; init; }
-    public string? DiscoveredInstanceName { get; init; }
-    public int? DiscoveredPort { get; init; }
-    public bool TcpConnected { get; init; }
-    public bool? LoginSucceeded { get; init; }
-}
-
 /// <summary>
 /// SQL Server 探针（设计文档 4.4）：UDP 1434 实例发现 → 返回端口 TCP → 可选 TLS/认证。
 /// 实例发现与数据库连接分步呈现；固定端口配置无需依赖 Browser。
@@ -40,7 +30,6 @@ public sealed class SqlServerProbe : ProbeBase
         var timeout = request.Parameters.Timeout;
         run.ResolvedAddresses = [target.ToString()];
         var stages = new List<StageTiming>();
-        var stageResult = new SqlProbeStageResult();
 
         int port;
         if (fixedPort is { } fp)

@@ -96,7 +96,9 @@ public partial class ScenarioPage : UserControl
         _lastRun = null;
 
         var outcome = await services.Orchestrator.ExecuteAsync(
-            request, services.Repository, capture, _cts.Token).ConfigureAwait(true);
+            request,
+            services.PersistenceReady ? services.Repository : null,
+            capture, _cts.Token).ConfigureAwait(true);
         _lastRun = outcome.Run;
         RenderRun(_lastRun);
 
@@ -104,7 +106,7 @@ public partial class ScenarioPage : UserControl
         var artifacts = services.ReportExport.ExportAll(_lastRun, services.EvidenceRoot);
         foreach (var a in artifacts)
             _lastRun.Artifacts.Add(a);
-        await services.Repository.SaveRunAsync(_lastRun).ConfigureAwait(true);
+        await services.SaveRunSafeAsync(_lastRun).ConfigureAwait(true);
 
         RunButton.IsEnabled = true;
         ExportButton.IsEnabled = true;

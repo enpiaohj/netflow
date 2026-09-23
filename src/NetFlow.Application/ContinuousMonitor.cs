@@ -36,9 +36,12 @@ public sealed record MonitorTask
 /// 持续监测（设计文档 4.8）：低频定时 TCP 探针。
 /// 休眠/断网/进程挂起造成的采样缺口记录为"缺口"而非目标故障；
 /// 不在后台抓包；一次采样失败不终止任务。
+/// 内存样本上限 {MaxInMemorySamples}，超出后淘汰最旧样本（统计随之滚动）。
 /// </summary>
 public sealed class ContinuousMonitor : IAsyncDisposable
 {
+    public const int MaxInMemorySamples = 10000;
+
     private readonly List<MonitorSample> _samples = [];
     private readonly object _lock = new();
     private CancellationTokenSource? _cts;
@@ -82,6 +85,16 @@ public sealed class ContinuousMonitor : IAsyncDisposable
         StatusChanged?.Invoke(this, "监测已停止");
     }
 
+    private void AddSample(MonitorSample sample)
+    {
+        lock (_lock)
+        {
+            _samples.Add(sample);
+            if (_samples.Count > MaxInMemorySamples)
+                _samples.RemoveRange(0, _samples.Count - MaxInMemorySamples);
+        }
+    }
+
     private async Task LoopAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -92,15 +105,12 @@ public sealed class ContinuousMonitor : IAsyncDisposable
             if (_lastSampleUtc is { } last &&
                 scheduledAt - last > TimeSpan.FromSeconds(Definition.IntervalSeconds * 2.5))
             {
-                lock (_lock)
+                AddSample(new MonitorSample
                 {
-                    _samples.Add(new MonitorSample
-                    {
-                        TimeUtc = last + TimeSpan.FromSeconds(Definition.IntervalSeconds),
-                        Level = ConclusionLevel.Skipped,
-                        Note = $"采样缺口（{(int)(scheduledAt - last).TotalSeconds}s 无采样；休眠/断网/挂起，不计入目标故障）",
-                    });
-                }
+                    TimeUtc = last + TimeSpan.FromSeconds(Definition.IntervalSeconds),
+                    Level = ConclusionLevel.Skipped,
+                    Note = $"采样缺口（{(int)(scheduledAt - last).TotalSeconds}s 无采样；休眠/断网/挂起，不计入目标故障）",
+                });
             }
 
             await TakeSampleAsync(scheduledAt, ct).ConfigureAwait(false);
@@ -119,6 +129,7 @@ public sealed class ContinuousMonitor : IAsyncDisposable
 
     private async Task TakeSampleAsync(DateTimeOffset at, CancellationToken ct)
     {
+        MonitorSample sample;
         try
         {
             if (!IPAddress.TryParse(Definition.Target, out var ip))
@@ -141,28 +152,35 @@ public sealed class ContinuousMonitor : IAsyncDisposable
             }).ConfigureAwait(false);
 
             var verdict = ConclusionEvaluator.Evaluate(run.Transport, run.Protocol);
-            var sample = new MonitorSample
+            sample = new MonitorSample
             {
                 TimeUtc = at,
                 Level = verdict.Level,
                 RttMs = run.Elapsed is { } e ? (int)e.TotalMilliseconds : null,
                 Note = run.Transport.ToString(),
             };
-            lock (_lock) _samples.Add(sample);
-            _lastSampleUtc = at;
-            SampleTaken?.Invoke(this, sample);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            var sample = new MonitorSample
+            // 采样异常（解析失败等）= 未确认，不终止监测任务
+            sample = new MonitorSample
             {
                 TimeUtc = at,
                 Level = ConclusionLevel.Unconfirmed,
                 Note = $"采样异常：{ex.Message}",
             };
-            lock (_lock) _samples.Add(sample);
-            _lastSampleUtc = at;
+        }
+
+        AddSample(sample);
+        _lastSampleUtc = at;
+        try
+        {
             SampleTaken?.Invoke(this, sample);
+        }
+        catch (Exception ex)
+        {
+            // 订阅方（UI）异常不能打断监测循环
+            AppLog.Warn($"监测事件订阅方异常：{ex.Message}");
         }
     }
 

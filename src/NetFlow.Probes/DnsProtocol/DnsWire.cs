@@ -248,6 +248,10 @@ public static class DnsWire
                 {
                     if (cur + 1 >= data.Length) throw new DnsWireFormatException("压缩指针不完整");
                     int pointer = ((len & 0x3F) << 8) | data[cur + 1];
+                    // RFC 1035：压缩指针必须指向报文中更早的位置；
+                    // 向前（或自指）指针只出现在构造的恶意报文中
+                    if (pointer >= cur)
+                        throw new DnsWireFormatException("压缩指针方向非法（指向后文）");
                     nextPos ??= cur + 2;
                     jumps++;
                     if (jumps > 32) throw new DnsWireFormatException("压缩指针循环");

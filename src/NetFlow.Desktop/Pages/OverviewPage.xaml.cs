@@ -3,6 +3,7 @@ using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using NetFlow.Application;
 using NetFlow.Desktop.Services;
 using NetFlow.Windows;
 
@@ -20,8 +21,15 @@ public partial class OverviewPage : UserControl
         {
             if (TargetInput.Text.Length == 0)
                 TargetInput.Text = "输入 IP、域名或服务器名称";
-            await LoadAdaptersAsync().ConfigureAwait(true);
-            await LoadRecentAsync().ConfigureAwait(true);
+            try
+            {
+                await LoadAdaptersAsync().ConfigureAwait(true);
+                await LoadRecentAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"总览页数据加载失败：{ex.Message}");
+            }
         };
     }
 
@@ -51,7 +59,9 @@ public partial class OverviewPage : UserControl
     private async Task LoadRecentAsync()
     {
         Recent.Clear();
-        var runs = await AppServices.Instance.Repository
+        var services = AppServices.Instance;
+        if (!services.PersistenceReady || services.Repository is null) return;
+        var runs = await services.Repository
             .ListRunsAsync(20).ConfigureAwait(true);
         foreach (var r in runs)
         {

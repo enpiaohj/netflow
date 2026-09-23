@@ -241,8 +241,17 @@ public sealed class DiagnosisOrchestrator
     private static async Task CheckpointAsync(
         NetFlow.Persistence.DiagnosisRepository? repository, DiagnosisRun run, CancellationToken ct)
     {
-        if (repository is not null)
+        if (repository is null) return;
+        try
+        {
             await repository.SaveRunAsync(run, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // 检查点失败（磁盘满/库被锁）：不中断诊断，已采证据与报告文件不受影响；
+            // 最终保存若同样失败会由上层降级路径呈现
+            AppLog.Error($"检查点写库失败（run {run.Id}）", ex);
+        }
     }
 
     private static string FileHashSha256(string path)

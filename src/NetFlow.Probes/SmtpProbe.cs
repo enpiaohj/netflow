@@ -49,7 +49,7 @@ public sealed class SmtpProbe : TcpHandshakeProbeBase
                 return run;
             }
 
-            // 阶段 2：EHLO（期待 250 多行）
+            // 阶段 2：EHLO（期待 250 多行；其他响应码=协议层失败事实）
             var ehlo = Encoding.ASCII.GetBytes($"EHLO {NetFlowInfo.UserAgent}\r\n");
             await SendAsync(socket, ehlo, ct).ConfigureAwait(false);
             var ehloResp = ToAscii(await ReadUntilAsync(socket, "\r\n"u8.ToArray(),
@@ -60,6 +60,17 @@ public sealed class SmtpProbe : TcpHandshakeProbeBase
                 var more = ToAscii(await ReadUntilAsync(socket, "\r\n"u8.ToArray(),
                     deadline - DateTime.UtcNow, ct).ConfigureAwait(false));
                 ehloResp = more;
+            }
+
+            if (!ehloResp.StartsWith("250"))
+            {
+                run.Protocol = ProtocolOutcome.ServiceError;
+                run.ProtocolDetail =
+                    $"Banner 正常但 EHLO 被拒绝（{ehloResp.Trim()}）。这是 SMTP 服务的明确响应，非网络断开。" +
+                    "常见于发件限制策略或需先认证/STARTTLS 的端口。";
+                run.AddObservation(Observation.Now(run.ProtocolDetail, DisplayName));
+                FinishRun(run);
+                return run;
             }
             run.AddObservation(Observation.Now($"EHLO 响应：{ehloResp.Trim()}", DisplayName));
 

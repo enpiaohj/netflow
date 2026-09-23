@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using NetFlow.Application;
 using NetFlow.Desktop.Services;
 using System.IO;
 
@@ -20,16 +21,25 @@ public partial class HistoryPage : UserControl
     private async Task LoadAsync()
     {
         Rows.Clear();
-        var runs = await AppServices.Instance.Repository.ListRunsAsync(300).ConfigureAwait(true);
-        foreach (var r in runs)
+        var services = AppServices.Instance;
+        if (!services.PersistenceReady || services.Repository is null) return;
+        try
         {
-            Rows.Add(new HistoryRow
+            var runs = await services.Repository.ListRunsAsync(300).ConfigureAwait(true);
+            foreach (var r in runs)
             {
-                StartLocal = r.Start?.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss") ?? "—",
-                Target = r.Target,
-                ScenarioName = r.ScenarioName ?? "自由测试",
-                Id = r.Id,
-            });
+                Rows.Add(new HistoryRow
+                {
+                    StartLocal = r.Start?.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss") ?? "—",
+                    Target = r.Target,
+                    ScenarioName = r.ScenarioName ?? "自由测试",
+                    Id = r.Id,
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"历史记录加载失败：{ex.Message}");
         }
     }
 

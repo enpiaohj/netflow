@@ -127,11 +127,33 @@ public sealed class UserTemplateStore
             if (list is not null)
                 lock (_lock) _cache.AddRange(list);
         }
-        catch
+        catch (JsonException ex)
         {
-            // 存储损坏时保留文件现场、以空列表启动（不静默覆盖用户数据）
+            // 存储损坏：保留现场备份后以空列表启动，绝不静默覆盖用户数据
+            var backup = _storePath + $".corrupt-{DateTime.Now:yyyyMMdd-HHmmss}.bak";
+            try
+            {
+                File.Copy(_storePath, backup, overwrite: true);
+                BrokenBackupPath = backup;
+            }
+            catch (IOException)
+            {
+                BrokenBackupPath = null;
+            }
+            BrokenReason = $"用户模板文件损坏（{ex.Message}）。" +
+                (BrokenBackupPath is { } b ? $"原文件已备份到 {b}。" : "备份失败，原文件保持原样未删除。") +
+                "本次以空模板列表启动。";
+        }
+        catch (IOException)
+        {
+            // 文件被占用等暂时性问题：以空列表启动，保留原文件，不标损坏
         }
     }
+
+    /// <summary>加载失败时的现场说明（UI 应展示；null = 正常）。</summary>
+    public string? BrokenReason { get; private set; }
+
+    public string? BrokenBackupPath { get; private set; }
 
     private void Save()
     {

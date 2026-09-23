@@ -161,8 +161,6 @@ public sealed class DnsProbe : ProbeBase
         IPAddress? source, CancellationToken ct)
     {
         using var udp = new UdpClient();
-        udp.Client.ReceiveTimeout = (int)timeout.TotalMilliseconds;
-
         if (source is not null)
         {
             udp.Client.Bind(new IPEndPoint(source, 0));

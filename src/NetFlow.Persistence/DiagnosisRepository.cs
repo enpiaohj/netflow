@@ -258,24 +258,35 @@ public sealed class DiagnosisRepository : IAsyncDisposable
     public async Task<IReadOnlyList<(string Id, string Target, DateTimeOffset? Start, string? ScenarioName)>>
         ListRunsAsync(int limit = 200, CancellationToken ct = default)
     {
-        var cmd = _connection.CreateCommand();
-        cmd.CommandText = """
-            SELECT id, requested_target, start_utc,
-                   COALESCE(scenario_name,'') FROM runs
-            ORDER BY start_utc DESC LIMIT $lim
-            """;
-        cmd.Parameters.AddWithValue("$lim", limit);
-        var result = new List<(string, string, DateTimeOffset?, string?)>();
-        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
-        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        // Microsoft.Data.Sqlite 的连接不支持并发使用：读路径同样经单写队列串行化
+        await _writeLock.WaitAsync(ct).ConfigureAwait(false);
+        try
         {
-            result.Add((
-                reader.GetString(0),
-                reader.GetString(1),
-                reader.IsDBNull(2) ? null : DateTimeOffset.Parse(reader.GetString(2)),
-                reader.IsDBNull(3) ? null : reader.GetString(3)));
+            var cmd = _connection.CreateCommand();
+            cmd.CommandText = """
+                SELECT id, requested_target, start_utc,
+                       COALESCE(scenario_name,'') FROM runs
+                ORDER BY start_utc DESC LIMIT $lim
+                """;
+            cmd.Parameters.AddWithValue("$lim", limit);
+            var result = new List<(string, string, DateTimeOffset?, string?)>();
+            await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            while (await reader.ReadAsync(ct).ConfigureAwait(false))
+            {
+                // start_utc 为空（检查点早期中断的任务）按 null 处理，不抛格式异常
+                var startIso = reader.IsDBNull(2) ? "" : reader.GetString(2);
+                result.Add((
+                    reader.GetString(0),
+                    reader.GetString(1),
+                    string.IsNullOrEmpty(startIso) ? null : DateTimeOffset.Parse(startIso),
+                    reader.IsDBNull(3) ? null : reader.GetString(3)));
+            }
+            return result;
         }
-        return result;
+        finally
+        {
+            _writeLock.Release();
+        }
     }
 
     /// <summary>留存清理：删除超期的 runs 及关联行。返回受影响 run 数。</summary>

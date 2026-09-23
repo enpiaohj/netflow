@@ -21,6 +21,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetFlow.Domain\NetFlow.Domain.csproj" />
     <ProjectReference Include="..\..\src\NetFlow.Application\NetFlow.Application.csproj" />
+    <ProjectReference Include="..\..\src\NetFlow.Capture\NetFlow.Capture.csproj" />
+    <ProjectReference Include="..\..\src\NetFlow.Persistence\NetFlow.Persistence.csproj" />
   </ItemGroup>
 
 </Project>
