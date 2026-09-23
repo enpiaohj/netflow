@@ -21,6 +21,8 @@ public sealed class AppServices
 
     public ReportExportService ReportExport { get; }
 
+    public UserTemplateStore UserTemplates { get; }
+
     /// <summary>证据与抓包根目录：%LOCALAPPDATA%\NetFlow</summary>
     public string EvidenceRoot { get; }
 
@@ -42,6 +44,7 @@ public sealed class AppServices
         Orchestrator.StatusChanged += (_, msg) => StatusMessage?.Invoke(this, msg);
         CaptureController = new PktmonCaptureController(EvidenceRoot);
         ReportExport = new ReportExportService(new RedactionOptions());
+        UserTemplates = new UserTemplateStore();
     }
 
     public void PublishStatus(string message) => StatusMessage?.Invoke(this, message);

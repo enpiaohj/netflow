@@ -40,6 +40,9 @@
             <!-- 模板列表 -->
             <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
                 <DockPanel>
+                    <Button DockPanel.Dock="Bottom" x:Name="SaveTemplateButton"
+                            Content="保存为新模板" Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,8,0,0" Click="SaveTemplate_Click"/>
                     <TextBlock DockPanel.Dock="Top" Text="场景模板" Style="{StaticResource SectionTitleStyle}"/>
                     <ListBox x:Name="TemplateList" BorderThickness="0" Background="Transparent"
                              Margin="0,6,0,0"/>

@@ -5,6 +5,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="110"/>
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
@@ -50,6 +52,49 @@
                         <DataGridTextColumn Header="说明" Binding="{Binding Detail}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <!-- 持续监测（设计文档 4.8：低频定时探针，采样缺口不计入目标故障） -->
+        <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      Height="6" Background="{StaticResource BorderLight}"/>
+        <Border Grid.Row="3" Style="{StaticResource CardStyle}" Margin="0,6,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="持续监测" Style="{StaticResource SectionTitleStyle}"/>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,4,0,8">
+                    <TextBlock Text="目标 host:port" VerticalAlignment="Center"/>
+                    <TextBox x:Name="MonitorTargetInput" Text="192.168.10.11:445" Width="170"
+                             Style="{StaticResource InputStyle}" Margin="6,0,10,0"/>
+                    <TextBlock Text="间隔(秒)" VerticalAlignment="Center"/>
+                    <TextBox x:Name="MonitorIntervalInput" Text="60" Width="60"
+                             Style="{StaticResource InputStyle}" Margin="6,0,10,0"/>
+                    <Button x:Name="MonitorStartButton" Content="启动监测"
+                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
+                            Click="MonitorStart_Click"/>
+                    <Button x:Name="MonitorStopButton" Content="停止"
+                            Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
+                            Click="MonitorStop_Click"/>
+                    <TextBlock x:Name="MonitorSummary" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextSecondary}" Margin="10,0,0,0"/>
+                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Disabled"
+                              HorizontalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="SampleStrip" Height="42">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Rectangle Width="6" Height="30" Margin="1,0"
+                                           RadiusX="1" RadiusY="1"
+                                           Fill="{Binding Color}"
+                                           ToolTip="{Binding Note}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </DockPanel>
         </Border>
     </Grid>

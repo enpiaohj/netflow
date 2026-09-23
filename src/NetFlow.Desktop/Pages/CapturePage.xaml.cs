@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -79,6 +80,31 @@ public partial class CapturePage : UserControl
         var dialog = new OpenFileDialog { Filter = "PCAPNG|*.pcapng|全部文件|*.*" };
         if (dialog.ShowDialog() != true) return;
         await LoadPcapngAsync(dialog.FileName).ConfigureAwait(true);
+    }
+
+    private async void Tshark_Click(object sender, RoutedEventArgs e)
+    {
+        var path = _lastPcapng;
+        if (path is null || !File.Exists(path))
+        {
+            var dialog = new OpenFileDialog { Filter = "PCAPNG|*.pcapng|全部文件|*.*" };
+            if (dialog.ShowDialog() != true) return;
+            path = dialog.FileName;
+        }
+
+        AnalysisBox.Clear();
+        AnalysisBox.AppendText("TShark 深度解析中（只调用本机已安装的 tshark.exe）…\n");
+        try
+        {
+            var (hierarchy, detail) = await Task.Run(() => TsharkAdapter.DeepAnalyzeAsync(path))
+                .ConfigureAwait(true);
+            AnalysisBox.Clear();
+            AnalysisBox.AppendText($"文件：{path}\n\n== 协议层级统计 ==\n{hierarchy}\n\n== 详细字段（前 300 行）==\n{detail}\n");
+        }
+        catch (Exception ex)
+        {
+            AnalysisBox.AppendText($"TShark 解析失败：{ex.Message}\n内置 PCAPNG 分析不受影响。\n");
+        }
     }
 
     private async Task LoadPcapngAsync(string path)

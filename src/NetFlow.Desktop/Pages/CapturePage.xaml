@@ -27,9 +27,13 @@
                             Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
                             IsEnabled="False" Click="Stop_Click"/>
                     <Button Grid.Column="4" Content="导入 PCAPNG"
-                            Style="{StaticResource SecondaryButtonStyle}" Click="Import_Click"/>
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
+                            Click="Import_Click"/>
+                    <Button Grid.Column="5" x:Name="TsharkButton" Content="TShark 深度解析"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="Tshark_Click" ToolTip="需要已安装 Wireshark/TShark（可选组件）"/>
                 </Grid>
-                <TextBlock x:Name="CaptureHint" Text="抓包通过独立提权宿主执行（Pktmon）；过滤目标为单个 IP。"
+                <TextBlock x:Name="CaptureHint" Text="抓包通过独立提权宿主执行（Pktmon）；过滤目标为单个 IP。TShark 为用户自装的可选深度解析器，不捆绑分发。"
                            FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,6,0,0"/>
             </StackPanel>
         </Border>

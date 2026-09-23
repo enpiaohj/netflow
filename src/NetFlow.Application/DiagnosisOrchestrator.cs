@@ -12,6 +12,9 @@ public sealed record DiagnosisRequest
     /// <summary>场景模板 ID；null = 自由测试（用 StepsOverride）。</summary>
     public string? ScenarioId { get; init; }
 
+    /// <summary>用户自定义模板（优先于 ScenarioId 查找内置表）。</summary>
+    public ScenarioTemplate? CustomTemplate { get; init; }
+
     /// <summary>自由测试时的探针清单。</summary>
     public IReadOnlyList<ScenarioStep>? StepsOverride { get; init; }
 
@@ -88,7 +91,8 @@ public sealed class DiagnosisOrchestrator
             run.StartUtc = DateTimeOffset.UtcNow;
             Report("准备中：解析目标与环境快照");
 
-            var template = request.ScenarioId is null ? null : BuiltinTemplates.Find(request.ScenarioId);
+            var template = request.CustomTemplate ??
+                (request.ScenarioId is null ? null : BuiltinTemplates.Find(request.ScenarioId));
             if (request.ScenarioId is not null && template is null)
                 throw new InvalidOperationException($"未知场景模板：{request.ScenarioId}");
 

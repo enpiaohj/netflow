@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Net;
 using System.Windows;
 using System.Windows.Controls;
+using NetFlow.Application;
 using NetFlow.Desktop.Services;
 using NetFlow.Domain;
 using NetFlow.Probes;
@@ -11,13 +12,92 @@ namespace NetFlow.Desktop.Pages;
 public partial class BatchPage : UserControl
 {
     public ObservableCollection<BatchRow> Rows { get; } = [];
+    public ObservableCollection<SampleStripItem> Strip { get; } = [];
 
     private CancellationTokenSource? _cts;
+    private ContinuousMonitor? _monitor;
 
     public BatchPage()
     {
         InitializeComponent();
         BatchGrid.ItemsSource = Rows;
+        SampleStrip.ItemsSource = Strip;
+    }
+
+    // ---- 持续监测 ----
+
+    private async void MonitorStart_Click(object sender, RoutedEventArgs e)
+    {
+        var target = MonitorTargetInput.Text.Trim();
+        var parts = target.Split(':');
+        int port = parts.Length > 1 && int.TryParse(parts[1], out var p) ? p : 80;
+        int interval = int.TryParse(MonitorIntervalInput.Text, out var i) ? i : 60;
+
+        _monitor = new ContinuousMonitor();
+        _monitor.SampleTaken += (_, sample) => Dispatcher.BeginInvoke(() => AddStripItem(sample));
+        _monitor.StatusChanged += (_, msg) => Dispatcher.BeginInvoke(() =>
+            AppServices.Instance.PublishStatus(msg));
+
+        try
+        {
+            _monitor.Start(new MonitorTask
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Target = parts[0],
+                Port = port,
+                IntervalSeconds = interval,
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "NetFlow");
+            return;
+        }
+
+        MonitorStartButton.IsEnabled = false;
+        MonitorStopButton.IsEnabled = true;
+        await Task.CompletedTask.ConfigureAwait(true);
+    }
+
+    private async void MonitorStop_Click(object sender, RoutedEventArgs e)
+    {
+        if (_monitor is not null)
+            await _monitor.StopAsync().ConfigureAwait(true);
+        MonitorStartButton.IsEnabled = true;
+        MonitorStopButton.IsEnabled = false;
+        RefreshMonitorSummary();
+    }
+
+    private void AddStripItem(MonitorSample sample)
+    {
+        Strip.Add(new SampleStripItem
+        {
+            Color = sample.Level switch
+            {
+                ConclusionLevel.Pass => new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0x16, 0xA3, 0x4A)),
+                ConclusionLevel.Warning => new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0xD9, 0x77, 0x06)),
+                ConclusionLevel.Fail => new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0xDC, 0x26, 0x26)),
+                ConclusionLevel.Skipped => new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0x94, 0xA3, 0xB8)),
+                _ => new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb(0x6B, 0x72, 0x80)),
+            },
+            Note = $"{sample.TimeUtc.ToLocalTime():HH:mm:ss} {sample.Level} {sample.Note}" +
+                (sample.RttMs is { } rtt ? $" {rtt}ms" : ""),
+        });
+        RefreshMonitorSummary();
+    }
+
+    private void RefreshMonitorSummary()
+    {
+        if (_monitor is null) return;
+        var (pass, warn, fail, unconfirmed, gaps) = _monitor.Summarize();
+        MonitorSummary.Text = _monitor.IsRunning
+            ? $"运行中｜通过 {pass}｜警告 {warn}｜失败 {fail}｜未确认 {unconfirmed}｜采样缺口 {gaps}（缺口不计入目标故障）"
+            : $"已停止｜通过 {pass}｜失败 {fail}｜未确认 {unconfirmed}｜采样缺口 {gaps}";
     }
 
     private async void Run_Click(object sender, RoutedEventArgs e)
@@ -125,4 +205,10 @@ public record BatchRow
     public required string Protocol { get; init; }
     public required string Elapsed { get; init; }
     public required string Detail { get; init; }
+}
+
+public record SampleStripItem
+{
+    public required System.Windows.Media.Brush Color { get; init; }
+    public required string Note { get; init; }
 }

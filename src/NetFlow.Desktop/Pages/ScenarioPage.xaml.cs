@@ -19,14 +19,39 @@ public partial class ScenarioPage : UserControl
     {
         InitializeComponent();
         ResultGrid.ItemsSource = Rows;
-        TemplateList.ItemsSource = BuiltinTemplates.All
-            .Select(t => new TemplateItem(t.Id, $"{t.Name}", t.Direction))
-            .ToList();
-        TemplateList.DisplayMemberPath = "Name";
-        TemplateList.SelectedIndex = 0;
+        ReloadTemplates();
     }
 
-    private sealed record TemplateItem(string Id, string Name, string Direction);
+    private void ReloadTemplates()
+    {
+        var items = new List<TemplateItem>();
+        foreach (var t in BuiltinTemplates.All)
+            items.Add(new TemplateItem(t.Id, $"{t.Name}（内置 v{t.Version}）", t.Direction, null));
+        foreach (var u in AppServices.Instance.UserTemplates.All)
+            items.Add(new TemplateItem(u.Id, $"{u.Name}（自定义 v{u.Version}）", u.Direction, u.Id));
+        TemplateList.ItemsSource = items;
+        TemplateList.DisplayMemberPath = "Name";
+        if (TemplateList.SelectedIndex < 0) TemplateList.SelectedIndex = 0;
+    }
+
+    private void SaveTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        if (TemplateList.SelectedItem is not TemplateItem item) return;
+        if (item.UserFileId is not null)
+        {
+            MessageBox.Show("已是自定义模板；后续版本提供可视化编辑器，当前可编辑 user-templates.json。", "NetFlow");
+            return;
+        }
+        var source = BuiltinTemplates.Find(item.Id);
+        if (source is null) return;
+
+        var name = source.Name + "（副本）";
+        AppServices.Instance.UserTemplates.CreateFromBuiltin(source, name);
+        ReloadTemplates();
+        AppServices.Instance.PublishStatus($"已创建用户模板：{name}（内置模板只读，编辑副本递增版本，不影响历史报告）");
+    }
+
+    private sealed record TemplateItem(string Id, string Name, string Direction, string? UserFileId);
 
     private async void Run_Click(object sender, RoutedEventArgs e)
     {
@@ -54,6 +79,15 @@ public partial class ScenarioPage : UserControl
             DomainName = domain.Length > 0 ? domain : null,
             Timeout = TimeSpan.FromSeconds(3),
         };
+
+        // 用户自定义模板：以固化快照参与执行（版本进入报告）
+        if (item.UserFileId is { } fileId)
+        {
+            var file = AppServices.Instance.UserTemplates.All
+                .FirstOrDefault(u => u.Id == fileId);
+            if (file is not null)
+                request = request with { CustomTemplate = AppServices.Instance.UserTemplates.ToTemplate(file) };
+        }
 
         var services = AppServices.Instance;
         var capture = CaptureToggle.IsChecked == true

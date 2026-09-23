@@ -14,8 +14,14 @@
                 <StackPanel>
                     <TextBlock Text="抓包与分析" Style="{StaticResource SectionTitleStyle}"/>
                     <TextBlock x:Name="PktmonText" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                    <Button Content="重新检测 Pktmon" Style="{StaticResource SecondaryButtonStyle}"
-                            HorizontalAlignment="Left" Margin="0,8,0,0" Click="Detect_Click"/>
+                    <TextBlock x:Name="TsharkText" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Foreground="{StaticResource TextSecondary}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="重新检测 Pktmon" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,10,0" Click="Detect_Click"/>
+                        <Button Content="重新检测 TShark" Style="{StaticResource SecondaryButtonStyle}"
+                                Click="DetectTshark_Click"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

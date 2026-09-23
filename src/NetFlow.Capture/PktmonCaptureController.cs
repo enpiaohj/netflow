@@ -112,7 +112,7 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
             var status = CaptureStatus.ReadFrom(statusFile);
             if (status is { Phase: "finished" or "failed" })
             {
-                return Task.FromResult((status.PcapngPath, (string?)status.Error ?? "抓包已结束"));
+                return Task.FromResult<(string?, string?)>((status.PcapngPath, status.Error ?? "抓包已结束"));
             }
             Thread.Sleep(500);
         }
