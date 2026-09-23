@@ -1,0 +1,78 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.OverviewPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 快速测试入口 -->
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="TargetInput" Style="{StaticResource InputStyle}"
+                         Margin="0,0,10,0"
+                         KeyDown="TargetInput_KeyDown"/>
+                <Button Grid.Column="1" x:Name="QuickTestButton" Content="快速测试"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Margin="0,0,10,0" Click="QuickTest_Click"/>
+                <Button Grid.Column="2" Content="场景诊断"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="Scenario_Click"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 本机网络状态 -->
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+                <StackPanel>
+                    <TextBlock Text="本机网络状态" Style="{StaticResource SectionTitleStyle}"/>
+                    <StackPanel x:Name="AdapterPanel" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 快速功能入口 -->
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Text="快速功能入口" Style="{StaticResource SectionTitleStyle}"/>
+                    <UniformGrid Columns="4" Margin="0,8,0,0">
+                        <Button Content="TCP/UDP 端口" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,8,0" Click="QuickNav_Click" Tag="quicktest"/>
+                        <Button Content="DNS 解析" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,8,0" Click="QuickNav_Click" Tag="quicktest"/>
+                        <Button Content="抓包分析" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,8,0" Click="QuickNav_Click" Tag="capture"/>
+                        <Button Content="服务检查" Style="{StaticResource SecondaryButtonStyle}"
+                                Click="QuickNav_Click" Tag="services"/>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 最近诊断 -->
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="最近诊断" Style="{StaticResource SectionTitleStyle}"/>
+                <DataGrid x:Name="RecentGrid" Style="{StaticResource DataGridStyle}"
+                          Margin="0,6,0,0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="时间" Binding="{Binding StartLocal}" Width="150"/>
+                        <DataGridTextColumn Header="目标" Binding="{Binding Target}" Width="*"/>
+                        <DataGridTextColumn Header="场景" Binding="{Binding ScenarioName}" Width="200"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

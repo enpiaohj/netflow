@@ -1,0 +1,32 @@
+# ---- .NET build outputs ----
+bin/
+obj/
+out/
+publish/
+artifacts/
+*.user
+*.suo
+.vs/
+.idea/
+
+# ---- Test results ----
+TestResults/
+*.trx
+coverage/
+
+# ---- Release snapshots：源码与 CHANGELOG 入库，二进制产物不入库 ----
+releases/**/*
+!releases/**/source/**
+!releases/**/CHANGELOG.md
+
+# ---- 本地环境专用文件（不得入库，含真实凭据/本机路径） ----
+testsettings.local.json
+**/testsettings.local.json
+*.local.json
+!*.example.json
+
+# ---- 日志与临时文件 ----
+logs/
+*.log
+.tmp/
+*.tmp

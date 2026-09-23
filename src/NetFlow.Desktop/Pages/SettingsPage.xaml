@@ -1,0 +1,41 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="860" HorizontalAlignment="Left">
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="权限与安全" Style="{StaticResource SectionTitleStyle}"/>
+                    <TextBlock x:Name="ElevatedText" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="抓包与分析" Style="{StaticResource SectionTitleStyle}"/>
+                    <TextBlock x:Name="PktmonText" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    <Button Content="重新检测 Pktmon" Style="{StaticResource SecondaryButtonStyle}"
+                            HorizontalAlignment="Left" Margin="0,8,0,0" Click="Detect_Click"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="数据保护" Style="{StaticResource SectionTitleStyle}"/>
+                    <CheckBox x:Name="RedactionToggle" Content="报告中脱敏敏感载荷（Authorization/Cookie/令牌/密码）"
+                              IsChecked="True" Margin="0,6,0,0"/>
+                    <TextBlock Text="报告脱敏与原始抓包是不同产物：导出的 PCAPNG 可能包含原始业务数据。"
+                               FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,6,0,0"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Text="存储" Style="{StaticResource SectionTitleStyle}"/>
+                    <TextBlock x:Name="StorageText" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,56 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.BatchPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="并发数" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBox Grid.Column="1" x:Name="ConcurrencyInput" Text="8"
+                             Style="{StaticResource InputStyle}" Margin="0,0,14,0"/>
+                    <TextBlock Grid.Column="2" Text="超时(秒)" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBox Grid.Column="3" x:Name="TimeoutInput" Text="3"
+                             Style="{StaticResource InputStyle}" Margin="0,0,14,0"/>
+                    <TextBlock Grid.Column="4" Text="目标列表（每行 host:port）" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <Button Grid.Column="6" x:Name="RunButton" Content="运行任务"
+                            Style="{StaticResource PrimaryButtonStyle}" Click="Run_Click"/>
+                </Grid>
+                <TextBox x:Name="TargetsInput" Style="{StaticResource InputStyle}" Margin="0,8,0,0"
+                         AcceptsReturn="True" Height="70" FontFamily="Consolas" FontSize="12"
+                         Text="192.168.10.11:53&#x0a;192.168.10.11:88&#x0a;192.168.10.11:389&#x0a;192.168.10.11:445&#x0a;192.168.10.15:445&#x0a;192.168.10.15:1433"/>
+                <TextBlock Text="局部失败不终止整批；完成后可只重跑失败项。"
+                           FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" x:Name="SummaryText" Text="目标检测矩阵"
+                           Style="{StaticResource SectionTitleStyle}"/>
+                <DataGrid x:Name="BatchGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="目标" Binding="{Binding Target}" Width="220"/>
+                        <DataGridTextColumn Header="结论" Binding="{Binding Level}" Width="90"/>
+                        <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="120"/>
+                        <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="90"/>
+                        <DataGridTextColumn Header="说明" Binding="{Binding Detail}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

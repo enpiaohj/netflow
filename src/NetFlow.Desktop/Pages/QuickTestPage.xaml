@@ -1,0 +1,92 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.QuickTestPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 目标与选项 -->
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="目标地址" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" x:Name="TargetInput" Style="{StaticResource InputStyle}"
+                             Margin="0,0,10,0"/>
+                    <ComboBox Grid.Column="2" x:Name="PortInput" IsEditable="True" Margin="0,0,10,0">
+                        <ComboBoxItem IsSelected="True">445</ComboBoxItem>
+                        <ComboBoxItem>53</ComboBoxItem>
+                        <ComboBoxItem>88</ComboBoxItem>
+                        <ComboBoxItem>389</ComboBoxItem>
+                        <ComboBoxItem>443</ComboBoxItem>
+                        <ComboBoxItem>1433</ComboBoxItem>
+                    </ComboBox>
+                    <TextBox Grid.Column="3" x:Name="TimeoutInput" Text="3" Margin="0,0,10,0"/>
+                    <Button Grid.Column="5" x:Name="StartButton" Content="开始测试"
+                            Style="{StaticResource PrimaryButtonStyle}" Click="Start_Click"/>
+                </Grid>
+                <TextBlock Text="目标地址；端口；超时（秒）" FontSize="11"
+                           Foreground="{StaticResource TextSecondary}" Margin="0,6,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 测试类型 -->
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal">
+                <RadioButton x:Name="TabTcpUdp" Content="TCP/UDP 端口" IsChecked="True"
+                             Margin="0,0,16,0" Checked="TabChanged" Tag="tcpudp"/>
+                <RadioButton Content="DNS 解析" Margin="0,0,16,0" Checked="TabChanged" Tag="dns"/>
+                <RadioButton Content="HTTP/TLS" Margin="0,0,16,0" Checked="TabChanged" Tag="http"/>
+                <RadioButton Content="Ping/路径" Margin="0,0,16,0" Checked="TabChanged" Tag="ping"/>
+                <RadioButton Content="NTP" Margin="0,0,16,0" Checked="TabChanged" Tag="ntp"/>
+                <RadioButton Content="自定义报文" Checked="TabChanged" Tag="custom"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 结果 -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" x:Name="ResultTitle" Text="测试结果"
+                               Style="{StaticResource SectionTitleStyle}"/>
+                    <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="探针" Binding="{Binding Probe}" Width="110"/>
+                            <DataGridTextColumn Header="结论" Binding="{Binding Level}" Width="80"/>
+                            <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="110"/>
+                            <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="110"/>
+                            <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="观察事实与证据" Style="{StaticResource SectionTitleStyle}"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <TextBox x:Name="DetailBox" IsReadOnly="True" TextWrapping="Wrap"
+                                 BorderThickness="0" Background="Transparent"
+                                 FontFamily="Consolas" FontSize="12" VerticalContentAlignment="Top"
+                                 MinHeight="300"/>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
