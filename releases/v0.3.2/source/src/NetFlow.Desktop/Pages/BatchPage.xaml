@@ -1,0 +1,196 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.BatchPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- 窗口较矮时整页可滚动：Grid 高度跟随可视区域，但不小于 MinHeight -->
+    <ScrollViewer x:Name="PageScroll" VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+    <Grid x:Name="PageGrid" MinHeight="600"
+          Height="{Binding ViewportHeight, ElementName=PageScroll}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="170"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="并发数" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="ConcurrencyInput" IsEditable="True"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="超时（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="TimeoutInput" IsEditable="True"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                        <TextBlock Text="端口包" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="PackCombo" SelectionChanged="PackCombo_SelectionChanged"
+                                  ToolTip="内置端口包可直接使用，也可在“管理端口包”中保存自定义端口包"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button x:Name="PackManageButton" Content="管理端口包" Margin="0,0,10,0"
+                                Style="{StaticResource SecondaryButtonStyle}" Click="PackManage_Click"/>
+                        <Button x:Name="RunButton" Content="开始检测" Margin="0,0,10,0"
+                                Style="{StaticResource PrimaryButtonStyle}" Click="Run_Click"/>
+                        <Button x:Name="StopButton" Content="停止" IsEnabled="False"
+                                Style="{StaticResource SecondaryButtonStyle}" Click="Stop_Click"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="主机列表（每行一个：host 按端口包展开，host:port 仅测该 TCP 端口）"
+                           Style="{StaticResource FieldLabelStyle}" Margin="0,12,0,4"/>
+                <TextBox x:Name="TargetsInput" AcceptsReturn="True" Height="84"
+                         VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                         FontFamily="Consolas" FontSize="12"
+                         Tag="例如：&#x0a;dc01.corp.example.com&#x0a;192.168.1.10&#x0a;192.168.1.20:1433"/>
+                <TextBlock x:Name="BatchHint" Style="{StaticResource StatusLineStyle}" Margin="0,6,0,0"
+                           Foreground="{StaticResource StatusFail}"/>
+
+                <!-- 端口包管理：内置只读；自定义包保存到数据库，重启后仍在 -->
+                <Border x:Name="PackEditor" Visibility="Collapsed" Margin="0,12,0,0" Padding="12"
+                        Background="#F8FAFC" BorderBrush="{StaticResource BorderLight}" BorderThickness="1"
+                        CornerRadius="8">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="260"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,12,0">
+                                <TextBlock Text="端口包名称" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox x:Name="PackNameInput" Tag="如：业务系统端口"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="说明（可选）" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox x:Name="PackDescInput" Tag="用途说明"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="端口列表（每行一项，如 tcp/445 SMB、udp/123 NTP；省略协议按 TCP；# 为注释）"
+                                   Style="{StaticResource FieldLabelStyle}" Margin="0,10,0,4"/>
+                        <TextBox x:Name="PackEntriesInput" AcceptsReturn="True" Height="130"
+                                 VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                 FontFamily="Consolas" FontSize="12"
+                                 Tag="tcp/445 SMB 文件共享&#x0a;tcp/1433 SQL Server&#x0a;udp/123 NTP"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button x:Name="PackSaveButton" Content="保存" Margin="0,0,10,0"
+                                    Style="{StaticResource PrimaryButtonStyle}" Click="PackSave_Click"/>
+                            <Button Content="另存为" Margin="0,0,10,0"
+                                    Style="{StaticResource SecondaryButtonStyle}" Click="PackSaveAs_Click"/>
+                            <Button x:Name="PackDeleteButton" Content="删除" Margin="0,0,16,0"
+                                    Style="{StaticResource SecondaryButtonStyle}" Click="PackDelete_Click"/>
+                            <TextBlock x:Name="PackStatus" VerticalAlignment="Center"
+                                       Style="{StaticResource HintTextStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" x:Name="SummaryText" Text="检测结果"
+                           Style="{StaticResource SectionTitleStyle}"/>
+                <Grid Margin="0,6,0,0">
+                <DataGrid x:Name="BatchGrid" Style="{StaticResource DataGridStyle}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="主机" Binding="{Binding Host}" Width="220"/>
+                        <DataGridTextColumn Header="端口" Binding="{Binding Service}" Width="200"/>
+                        <DataGridTemplateColumn Header="结论" Width="92">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="{Binding LevelBrush}" CornerRadius="10"
+                                            Padding="9,2" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding Level}" FontSize="11" Foreground="White"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="传输层" Binding="{Binding Transport}" Width="110"/>
+                        <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="90"/>
+                        <DataGridTextColumn Header="说明" Binding="{Binding Detail}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock Text="输入主机并选择端口包后，点击“开始检测”">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Items.Count, ElementName=BatchGrid}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                </Grid>
+            </DockPanel>
+        </Border>
+
+        <!-- 持续监测（设计文档 4.8：低频定时探针，采样缺口不计入目标故障） -->
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Margin="0,12,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="持续监测" Style="{StaticResource SectionTitleStyle}"/>
+                <Grid DockPanel.Dock="Top" Margin="0,4,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="目标（host:port）" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="MonitorTargetInput" IsEditable="True"
+                                  Tag="如 192.168.1.10:443"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="间隔（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="MonitorIntervalInput" IsEditable="True">
+                            <ComboBoxItem>30</ComboBoxItem>
+                            <ComboBoxItem IsSelected="True">60</ComboBoxItem>
+                            <ComboBoxItem>120</ComboBoxItem>
+                            <ComboBoxItem>300</ComboBoxItem>
+                            <ComboBoxItem>600</ComboBoxItem>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button x:Name="MonitorStartButton" Content="启动监测"
+                                Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
+                                Click="MonitorStart_Click"/>
+                        <Button x:Name="MonitorStopButton" Content="停止"
+                                Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
+                                Click="MonitorStop_Click"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="3" x:Name="MonitorSummary" VerticalAlignment="Bottom"
+                               Foreground="{StaticResource TextSecondary}" Margin="14,0,0,8"
+                               TextWrapping="Wrap"/>
+                </Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Disabled"
+                              HorizontalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="SampleStrip" Height="42">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Rectangle Width="6" Height="30" Margin="1,0"
+                                           RadiusX="1" RadiusY="1"
+                                           Fill="{Binding Color}"
+                                           ToolTip="{Binding Note}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+    </ScrollViewer>
+</UserControl>
