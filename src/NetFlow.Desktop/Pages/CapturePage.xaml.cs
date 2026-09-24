@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using NetFlow.Application;
 using NetFlow.Application.Ai;
 using NetFlow.Capture;
 using NetFlow.Desktop.Services;
@@ -63,6 +64,23 @@ public partial class CapturePage : UserControl
         ModeInput.SelectedIndex = settings.CaptureMode == "live" ? 1 : 0;
         ModeInput.SelectionChanged += (_, _) => UpdateModeHint();
         UpdateModeHint();
+
+        // 设置页修改默认值后立即生效（不需要重启）
+        _appliedDefaults = settings;
+        AppServices.Instance.Settings.Changed += (_, s) => Dispatcher.BeginInvoke(() => ApplyDefaults(s));
+    }
+
+    private AppSettings _appliedDefaults;
+
+    /// <summary>仅应用发生变化的默认值，避免覆盖用户在本页手动调整的其他参数；抓包进行中不改动。</summary>
+    private void ApplyDefaults(AppSettings s)
+    {
+        if (!StartButton.IsEnabled) return;
+        var old = _appliedDefaults;
+        _appliedDefaults = s;
+        if (s.CaptureMode != old.CaptureMode) ModeInput.SelectedIndex = s.CaptureMode == "live" ? 1 : 0;
+        if (s.CaptureDurationSeconds != old.CaptureDurationSeconds) DurationInput.Text = s.CaptureDurationSeconds.ToString();
+        if (s.CaptureSnapBytes != old.CaptureSnapBytes) SnapInput.Text = s.CaptureSnapBytes.ToString();
     }
 
     private void UpdateModeHint()

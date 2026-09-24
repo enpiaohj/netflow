@@ -26,6 +26,7 @@ public partial class QuickTestPage : UserControl
     private IPAddress? _lastSource;
     private string _lastTitle = "快速测试";
     private string _portListKind = "";
+    private double _appliedTimeout;
 
     public QuickTestPage()
     {
@@ -33,7 +34,16 @@ public partial class QuickTestPage : UserControl
         ResultGrid.ItemsSource = Results;
         UiState.Bind(TargetInput, "target");
         UiState.Bind(DnsServerInput, "dns");
-        TimeoutInput.Text = AppServices.Instance.Settings.Current.DefaultTimeoutSeconds.ToString("0.##");
+        _appliedTimeout = AppServices.Instance.Settings.Current.DefaultTimeoutSeconds;
+        TimeoutInput.Text = _appliedTimeout.ToString("0.##");
+        // 设置页修改默认超时后立即生效
+        AppServices.Instance.Settings.Changed += (_, s) => Dispatcher.BeginInvoke(() =>
+        {
+            if (!StartButton.IsEnabled) return;
+            if (s.DefaultTimeoutSeconds == _appliedTimeout) return;
+            _appliedTimeout = s.DefaultTimeoutSeconds;
+            TimeoutInput.Text = _appliedTimeout.ToString("0.##");
+        });
         UpdateTypeUi();
         Loaded += (_, _) =>
         {

@@ -41,9 +41,24 @@ public partial class BatchPage : UserControl
         foreach (var v in new[] { "1", "2", "3", "5", "10", "30" }) TimeoutInput.Items.Add(v);
         TimeoutInput.Text = settings.DefaultTimeoutSeconds.ToString("0.##");
 
+        // 设置页修改默认值后立即生效（仅应用发生变化的项）
+        _appliedDefaults = settings;
+        AppServices.Instance.Settings.Changed += (_, s) => Dispatcher.BeginInvoke(() => ApplyDefaults(s));
+
         RefreshPackChoices(UiState.GetPreference("batch.pack"));
         if (!AppServices.Instance.PortPacks.IsPersistent)
             PackStatus.Text = "本地数据库不可用，自定义端口包仅在本次运行期间有效。";
+    }
+
+    private AppSettings _appliedDefaults;
+
+    private void ApplyDefaults(AppSettings s)
+    {
+        if (!RunButton.IsEnabled) return;
+        var old = _appliedDefaults;
+        _appliedDefaults = s;
+        if (s.BatchConcurrency != old.BatchConcurrency) ConcurrencyInput.Text = s.BatchConcurrency.ToString();
+        if (s.DefaultTimeoutSeconds != old.DefaultTimeoutSeconds) TimeoutInput.Text = s.DefaultTimeoutSeconds.ToString("0.##");
     }
 
     // ---- 端口包 ----

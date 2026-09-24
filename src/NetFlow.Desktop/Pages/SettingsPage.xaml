@@ -10,7 +10,7 @@
                         <StackPanel>
                             <TextBlock Text="网络测试默认值" Style="{StaticResource SectionTitleStyle}"/>
                             <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,4,0,10"
-                                       Text="用作“快速测试”和“批量任务”的初始值。修改后自动保存，重新打开页面后生效。"/>
+                                       Text="用作“快速测试”和“批量任务”的初始值。修改后立即生效并自动保存。"/>
                             <StackPanel Orientation="Horizontal">
                                 <StackPanel Margin="0,0,16,0">
                                     <TextBlock Text="默认超时（秒）" Style="{StaticResource FieldLabelStyle}"/>
