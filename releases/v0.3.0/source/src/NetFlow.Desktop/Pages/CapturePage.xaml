@@ -1,0 +1,124 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.CapturePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="过滤目标（IP）" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="TargetInput" IsEditable="True"
+                                  Tag="仅抓取与该 IP 相关的流量"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="抓包方式" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="ModeInput"
+                                  ToolTip="记录后分析：生成 PCAPNG 并自动分析。实时显示：实时输出数据包，不保存文件">
+                            <ComboBoxItem>记录后分析（保存 PCAPNG）</ComboBoxItem>
+                            <ComboBoxItem>实时显示（不保存文件）</ComboBoxItem>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Width="120" Margin="0,0,12,0">
+                        <TextBlock Text="最长时长（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="DurationInput" IsEditable="True"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="3" Width="120">
+                        <TextBlock Text="截断（字节）" Style="{StaticResource FieldLabelStyle}"
+                                   ToolTip="每个包只保留前 N 字节；0 = 完整包"/>
+                        <ComboBox x:Name="SnapInput" IsEditable="True"
+                                  ToolTip="每个包只保留前 N 字节；0 = 完整包"/>
+                    </StackPanel>
+                </Grid>
+                <WrapPanel Margin="0,12,0,0">
+                    <Button x:Name="StartButton" Content="开始抓包"
+                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
+                            Click="Start_Click"/>
+                    <Button x:Name="StopButton" Content="停止"
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,20,0"
+                            IsEnabled="False" Click="Stop_Click"/>
+                    <Button Content="导入 PCAPNG"
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
+                            Click="Import_Click"/>
+                    <Button x:Name="TsharkButton" Content="TShark 深度解析" Margin="0,0,10,0"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="Tshark_Click" ToolTip="需要安装 Wireshark/TShark（可选组件）"/>
+                    <Button x:Name="AiButton" Content="AI 分析" Style="{StaticResource SecondaryButtonStyle}"
+                            Click="Ai_Click" ToolTip="将抓包摘要（已脱敏）发送给 AI 分析"/>
+                </WrapPanel>
+                <TextBlock x:Name="ModeHint" Style="{StaticResource HintTextStyle}" Margin="0,10,0,0"/>
+                <TextBlock x:Name="CaptureHint" Text="" Style="{StaticResource StatusLineStyle}"
+                           Foreground="{StaticResource PrimaryBrush}" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" MinWidth="420"/>
+                <ColumnDefinition Width="*" MinWidth="260"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="PacketTitle" Text="数据包列表" VerticalAlignment="Center"
+                                   Style="{StaticResource SectionTitleStyle}"/>
+                        <CheckBox Grid.Column="1" x:Name="AutoScrollCheck" Content="自动滚动到最新" IsChecked="True"
+                                  VerticalAlignment="Center" ToolTip="自动滚动到最新数据包"/>
+                    </Grid>
+                    <Grid Margin="0,6,0,0">
+                    <DataGrid x:Name="PacketGrid" Style="{StaticResource DataGridStyle}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#" Binding="{Binding No}" Width="56"/>
+                            <DataGridTextColumn Header="时间" Binding="{Binding Time}" Width="100"/>
+                            <DataGridTextColumn Header="方向" Binding="{Binding Direction}" Width="56"/>
+                            <DataGridTextColumn Header="来源" Binding="{Binding Source}" Width="160"/>
+                            <DataGridTextColumn Header="目标" Binding="{Binding Destination}" Width="160"/>
+                            <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="70"/>
+                            <DataGridTextColumn Header="信息" Binding="{Binding Info}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock Text="暂无数据包，请开始抓包或导入 PCAPNG">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count, ElementName=PacketGrid}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" x:Name="AnalysisTitle" Text="异常分析"
+                               Style="{StaticResource SectionTitleStyle}"/>
+                    <TextBox x:Name="AnalysisBox" IsReadOnly="True" TextWrapping="Wrap"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                             BorderThickness="0" Background="Transparent" VerticalContentAlignment="Top"
+                             FontFamily="Consolas" FontSize="12" Margin="0,6,0,0"
+                             Tag="抓包结束或导入文件后，显示重传、复位、握手失败等异常分析"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
