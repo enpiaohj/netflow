@@ -62,7 +62,7 @@ public partial class QuickTestPage : UserControl
         {
             "dns" => "使用本机系统 DNS 服务器查询 A / AAAA 记录。域名不存在（NXDOMAIN）表示 DNS 有响应但查询业务失败。",
             "http" => "未写协议时按 HTTPS 访问并检查 TLS 证书；也可直接填写完整 URL。",
-            "ping" => "发送 4 次 ICMP 并追踪路径（最多 10 跳）。ICMP 无回应不等同于主机不可达。",
+            "ping" => "发送 4 次 ICMP 并追踪路径（最多 10 跳）。ICMP 无回应不等同于主机不可达。注意：Ping/路径无法指定源网卡，由系统路由选择。",
             "ntp" => "向目标发起 NTP 时间请求。",
             _ => "同时测试 TCP 连接与 UDP 探测。TCP 连通仅代表传输层成功；UDP 无响应为“未确认”，耗时显示“—”而非 0ms。",
         };
@@ -140,6 +140,17 @@ public partial class QuickTestPage : UserControl
             }
         }
 
+        // 源网卡：按目标协议族取所选网卡的地址；DNS/HTTP 类型目标协议族由探针决定，按 IPv4 取
+        var family = tab is "tcpudp" or "ping" or "ntp"
+            ? ip.AddressFamily
+            : AddressFamily.InterNetwork;
+        var (source, sourceError) = SourceSelection.Resolve(family);
+        if (sourceError is not null)
+        {
+            SetError(sourceError);
+            return;
+        }
+
         StartButton.IsEnabled = false;
         StopButton.IsEnabled = true;
         Results.Clear();
@@ -161,6 +172,7 @@ public partial class QuickTestPage : UserControl
                 Port = port,
                 Timeout = timeout,
             },
+            SourceAddress = source,
             CancellationToken = _cts.Token,
         };
 

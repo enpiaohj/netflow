@@ -52,6 +52,7 @@ public partial class BatchPage : UserControl
                 Target = parts[0],
                 Port = port,
                 IntervalSeconds = interval,
+                SourceAdapterName = SourceSelection.SelectedAdapterName,
             });
         }
         catch (Exception ex)
@@ -163,9 +164,17 @@ public partial class BatchPage : UserControl
                 ? direct
                 : (await Dns.GetHostAddressesAsync(host).ConfigureAwait(true)).First();
 
+            var (source, sourceError) = SourceSelection.Resolve(ip.AddressFamily);
+            if (sourceError is not null)
+            {
+                Rows[Rows.IndexOf(row)] = row with { Level = "未确认", Detail = sourceError };
+                return;
+            }
+
             var run = await new TcpConnectProbe().ExecuteAsync(ip, port, new ProbeRequest
             {
                 RunId = runId,
+                SourceAddress = source,
                 Parameters = new ProbeParameters
                 {
                     ProbeType = ProbeType.TcpConnect,

@@ -39,6 +39,9 @@ public sealed class WinRmProbe : ProbeBase
             return run;
         }
 
+        NoteSourceNotBindable(run, request, DisplayName, "WS-Man HTTP 请求阶段（HttpClient）",
+            "上述 TCP 连通性检查已绑定源地址，此阶段使用独立连接");
+
         // WS-Man Identify SOAP
         const string envelope = """
             <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"

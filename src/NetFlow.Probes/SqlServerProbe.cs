@@ -99,6 +99,7 @@ public sealed class SqlServerProbe : ProbeBase
         // —— 阶段 3：可选登录（TDS 预登录 + 认证）——
         if (tryLogin)
         {
+            NoteSourceNotBindable(run, request, DisplayName, "SQL 登录阶段（SqlClient）", "驱动不支持");
             var loginSw = System.Diagnostics.Stopwatch.StartNew();
             try
             {

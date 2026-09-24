@@ -110,7 +110,10 @@ public sealed class DiagnosisOrchestrator
                 resolved = await _resolver.ResolveAsync(request.RequestedTarget, ct).ConfigureAwait(false);
             }
             run.ResolvedAddresses = [.. resolved.Select(a => a.ToString())];
-            var target = resolved.First();
+            // 指定了源地址时，优先选与其同协议族的目标地址（IPv4 源地址无法连接 IPv6 目标）
+            var target = request.SourceAddress is { } src
+                ? resolved.FirstOrDefault(a => a.AddressFamily == src.AddressFamily) ?? resolved.First()
+                : resolved.First();
 
             if (template is not null)
                 run.Scenario = template.ToSnapshot();

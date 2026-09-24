@@ -36,6 +36,9 @@ public sealed class LdapProbe : ProbeBase
         run.AddObservation(Observation.Now(
             $"LDAP 探测：{host}:{port}{(useSsl ? "（LDAPS）" : "")}，绑定模式 {bindMode}", DisplayName));
 
+        NoteSourceNotBindable(run, request, DisplayName, "LDAP 绑定与查询",
+            "System.DirectoryServices.Protocols 不支持");
+
         if (useSsl)
         {
             // LDAPS 走 TLS，先做传输层确认（证书校验结果单独呈现）

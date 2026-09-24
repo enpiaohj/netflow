@@ -20,7 +20,8 @@ public sealed class IcmpProbe : ProbeBase
         var run = NewRun(request);
         var ct = request.CancellationToken;
         run.ResolvedAddresses = [target.ToString()];
-        run.SourceAddress = request.SourceAddress?.ToString();
+        // .NET Ping 不支持绑定源地址：不再把“请求的源地址”写成本次源地址
+        NoteSourceNotBindable(run, request, DisplayName, "ICMP 回显", "Windows ICMP 接口限制");
 
         int replied = 0;
         var rttList = new List<long>();
@@ -91,6 +92,7 @@ public sealed class IcmpProbe : ProbeBase
         var run = NewRun(request);
         var ct = request.CancellationToken;
         run.ResolvedAddresses = [target.ToString()];
+        NoteSourceNotBindable(run, request, DisplayName, "路径探测", "Windows ICMP 接口限制");
 
         for (int ttl = 1; ttl <= maxHops; ttl++)
         {

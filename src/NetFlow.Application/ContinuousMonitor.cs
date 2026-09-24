@@ -30,6 +30,9 @@ public sealed record MonitorTask
     public int IntervalSeconds { get; init; } = 60;
 
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(3);
+
+    /// <summary>指定的源网卡名（null = 系统路由选择）。每次采样按网卡名取当前地址，网卡换 IP 后仍有效。</summary>
+    public string? SourceAdapterName { get; init; }
 }
 
 /// <summary>
@@ -138,9 +141,20 @@ public sealed class ContinuousMonitor : IAsyncDisposable
                 ip = resolved.First();
             }
 
+            IPAddress? source = null;
+            if (Definition.SourceAdapterName is { } adapterName)
+            {
+                // 网卡不可用/无同协议族地址：本次采样记为未确认（异常分支），不当作目标故障
+                source = SourceAdapterCatalog.List().FirstOrDefault(o => o.Name == adapterName)
+                    ?.PickFor(ip.AddressFamily)
+                    ?? throw new InvalidOperationException(
+                        $"所选源网卡“{adapterName}”不在线或没有可用的 {ip.AddressFamily} 地址");
+            }
+
             var run = await new TcpConnectProbe().ExecuteAsync(ip, Definition.Port, new ProbeRequest
             {
                 RunId = RunId.New(),
+                SourceAddress = source,
                 Parameters = new ProbeParameters
                 {
                     ProbeType = ProbeType.TcpConnect,

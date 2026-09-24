@@ -18,18 +18,9 @@ public partial class MainWindow : Window
         ElevatedText.Text = NetworkInterfaceHelper.IsElevated()
             ? "管理员权限：可用（抓包可用）"
             : "普通权限：抓包将通过 UAC 按需提升";
-        try
-        {
-            var adapter = NetworkInterfaceHelper.GetPreferredAdapterName(null);
-            var profile = NetFlow.Windows.NetworkProfileCollector.CollectAdapters()
-                .FirstOrDefault(a => a.Name == adapter);
-            var ip = profile?.Ipv4Addresses.FirstOrDefault();
-            SourceAdapterText.Text = adapter is null ? "—" : $"{adapter}（{ip ?? "—"}）";
-        }
-        catch
-        {
-            SourceAdapterText.Text = "—";
-        }
+        RefreshSourceChoices();
+        // 网卡可能在使用期间上线/下线/换 IP：窗口重新获得焦点时刷新候选
+        Activated += (_, _) => RefreshSourceChoices();
 
         AppServices.Instance.StatusMessage += (_, msg) => Dispatcher.BeginInvoke(() =>
             StatusText.Text = msg);
@@ -66,6 +57,62 @@ public partial class MainWindow : Window
 
         NavOverview.IsChecked = true;
         ShowPage("overview");
+    }
+
+    /// <summary>源网卡下拉项：AdapterName 为 null 表示“自动”。</summary>
+    private sealed record SourceChoice(string Display, string? AdapterName)
+    {
+        // 自动化名称/读屏取 ToString：避免显示 record 默认的 “SourceChoice { … }”
+        public override string ToString() => Display;
+    }
+
+    private bool _refreshingSources;
+
+    private void RefreshSourceChoices()
+    {
+        _refreshingSources = true;
+        try
+        {
+            var preferred = NetworkInterfaceHelper.GetPreferredAdapterName(null);
+            var choices = new List<SourceChoice>
+            {
+                new(preferred is null
+                    ? "自动（系统路由选择）"
+                    : $"自动（系统路由选择，默认 {preferred}）", null),
+            };
+            choices.AddRange(SourceAdapterCatalog.List().Select(o => new SourceChoice(o.Display, o.Name)));
+            SourceAdapterCombo.ItemsSource = choices;
+
+            var selectedName = SourceSelection.SelectedAdapterName;
+            var current = selectedName is null
+                ? choices[0]
+                : choices.FirstOrDefault(c => c.AdapterName == selectedName);
+            if (current is null)
+            {
+                // 所选网卡已下线：回到自动并提示，避免仍按不存在的网卡执行
+                SourceSelection.SelectedAdapterName = null;
+                AppServices.Instance.PublishStatus($"源网卡“{selectedName}”已不在线，已恢复为“自动”");
+                current = choices[0];
+            }
+            SourceAdapterCombo.SelectedItem = current;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"源网卡列表读取失败：{ex.Message}");
+        }
+        finally
+        {
+            _refreshingSources = false;
+        }
+    }
+
+    private void SourceAdapterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_refreshingSources || SourceAdapterCombo.SelectedItem is not SourceChoice choice) return;
+        SourceSelection.SelectedAdapterName = choice.AdapterName;
+        AppServices.Instance.PublishStatus(choice.AdapterName is null
+            ? "测试源：自动（系统路由选择）"
+            : $"测试源：{choice.Display}（各探针将绑定该网卡地址）");
     }
 
     private void RefreshActivity()

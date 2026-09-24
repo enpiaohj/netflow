@@ -79,6 +79,18 @@ public abstract class ProbeBase
         StartUtc = DateTimeOffset.UtcNow,
     };
 
+    /// <summary>
+    /// 探针（或其某阶段）底层 API 无法指定源地址时调用：用户已选择源网卡则如实记录
+    /// “本次由系统路由选择”，避免证据里出现实际并未使用的源地址。
+    /// </summary>
+    protected static void NoteSourceNotBindable(
+        ProbeRun run, ProbeRequest request, string displayName, string scope, string reason)
+    {
+        if (request.SourceAddress is not { } requested) return;
+        run.AddObservation(Observation.Now(
+            $"限制：{scope}无法指定源地址（{reason}），本次由系统路由选择，未使用所选源地址 {requested}", displayName));
+    }
+
     protected static void FinishRun(ProbeRun run, ProbeState state = ProbeState.Completed)
     {
         run.State = state;

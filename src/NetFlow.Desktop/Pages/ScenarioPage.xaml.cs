@@ -77,6 +77,17 @@ public partial class ScenarioPage : UserControl
             return;
         }
 
+        // 源网卡：目标为 IPv6 字面量时取 IPv6 地址，其余按 IPv4；编排器会优先选择同协议族的解析结果
+        var family = System.Net.IPAddress.TryParse(target, out var literal)
+            ? literal.AddressFamily
+            : System.Net.Sockets.AddressFamily.InterNetwork;
+        var (source, sourceError) = SourceSelection.Resolve(family);
+        if (sourceError is not null)
+        {
+            ProgressText.Text = sourceError;
+            return;
+        }
+
         RunButton.IsEnabled = false;
         StopButton.IsEnabled = true;
         ExportButton.IsEnabled = false;
@@ -91,6 +102,7 @@ public partial class ScenarioPage : UserControl
             RequestedTarget = target,
             ScenarioId = item.Id,
             DomainName = domain.Length > 0 ? domain : null,
+            SourceAddress = source,
             Timeout = TimeSpan.FromSeconds(3),
         };
 
