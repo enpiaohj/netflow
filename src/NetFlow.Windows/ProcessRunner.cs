@@ -100,7 +100,9 @@ public static class ProcessRunner
         RunAsync(WindowsPowerShellPath,
         [
             "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-            "-Command", script,
+            // Windows PowerShell 默认按系统 OEM 代码页（如 936/949）输出，而读取端按 UTF-8 解码，
+            // 中文接口名/路由别名会乱码：先把控制台输出编码切到 UTF-8
+            "-Command", "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; " + script,
         ], timeout, ct);
 
     private static async Task PumpAsync(

@@ -41,11 +41,11 @@ public static class FirewallReader
                 $s = $_ | Get-NetFirewallServiceFilter;
                 [pscustomobject]@{
                   Name=$_.Name; DisplayName=$_.DisplayName; Enabled=$_.Enabled;
-                  Direction=$_.Direction; Action=$_.Action; Profile=($_.Profile -join ',');
+                  Direction=[string]$_.Direction; Action=[string]$_.Action; Profile=($_.Profile -join ',');
                   Program=$p.Program; Service=$s.Service;
                   LocalPorts=($p.LocalPort -join ','); RemotePorts=($p.RemotePort -join ',');
                   LocalAddresses=($a.LocalAddress -join ','); RemoteAddresses=($a.RemoteAddress -join ',');
-                  Protocol=$p.Protocol
+                  Protocol=[string]$p.Protocol
                 }
               } | ConvertTo-Json -Compress -Depth 3
             """.Replace("FILTER", filter).Replace("MAX", maxRules.ToString());

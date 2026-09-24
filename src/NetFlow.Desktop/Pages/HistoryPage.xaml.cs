@@ -35,7 +35,7 @@ public partial class HistoryPage : UserControl
             {
                 StartLocal = r.Start?.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss") ?? "—",
                 Target = r.Target,
-                ScenarioName = r.ScenarioName ?? "自由测试",
+                ScenarioName = r.ScenarioName ?? "快速测试",
                 Id = r.Id,
                 ScenarioId = r.ScenarioId,
             }).ToList();
@@ -43,7 +43,7 @@ public partial class HistoryPage : UserControl
         }
         catch (Exception ex)
         {
-            AppLog.Warn($"历史记录加载失败：{ex.Message}");
+            AppLog.Warn($"无法加载历史记录：{ex.Message}");
         }
     }
 
@@ -82,7 +82,7 @@ public partial class HistoryPage : UserControl
     {
         if (HistoryGrid.SelectedItem is not HistoryRow row)
         {
-            MessageBox.Show("请先选择一条记录", "NetFlow");
+            MessageBox.Show("请先选择一条记录。", "NetFlow");
             return;
         }
         var reportPath = Path.Combine(
@@ -91,8 +91,8 @@ public partial class HistoryPage : UserControl
         {
             // 原始文件可能已按留存策略清理——如实提示，不留失效入口
             MessageBox.Show(
-                "报告文件已清理或尚未生成（留存策略可能已删除原始文件）。\n" +
-                $"期望位置：{reportPath}", "NetFlow",
+                "找不到报告文件。可能尚未生成，或已被清理。\n" +
+                $"预期位置：{reportPath}", "NetFlow",
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
@@ -107,12 +107,12 @@ public partial class HistoryPage : UserControl
     {
         if (HistoryGrid.SelectedItem is not HistoryRow row)
         {
-            MessageBox.Show("请先选择一条记录", "NetFlow");
+            MessageBox.Show("请先选择一条记录。", "NetFlow");
             return;
         }
         if (string.IsNullOrEmpty(row.ScenarioId))
         {
-            MessageBox.Show("该记录为自由测试，未关联场景模板，暂不支持重跑。", "NetFlow");
+            MessageBox.Show("该记录来自快速测试，未关联场景，无法重新运行。", "NetFlow");
             return;
         }
         NavigationState.PendingScenarioRun = (row.ScenarioId, row.Target);

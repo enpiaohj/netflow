@@ -112,7 +112,7 @@ public static class NetworkProfileCollector
                 @{n='NextHop';e={$_.NextHop}},
                 @{n='InterfaceAlias';e={$_.InterfaceAlias}},
                 @{n='RouteMetric';e={$_.RouteMetric}},
-                @{n='Protocol';e={$_.Protocol}} | ConvertTo-Json -Compress
+                @{n='Protocol';e={[string]$_.Protocol}} | ConvertTo-Json -Compress
             """;
         var result = await ProcessRunner.RunPowerShellAsync(script,
             TimeSpan.FromSeconds(20), ct).ConfigureAwait(false);
@@ -206,10 +206,12 @@ public static class NetworkProfileCollector
             var longest = matches.OrderByDescending(m => m.Prefix).FirstOrDefault().Route;
             if (longest is not null)
             {
-                nextHop = longest.NextHop;
+                nextHop = longest.NextHop is "0.0.0.0" or "::" ? "直连（目标在本网段，无需网关）" : longest.NextHop;
                 iface = longest.InterfaceAlias;
-                explanation = $"最长前缀匹配 {longest.Destination}/{longest.PrefixLength}" +
-                    $"（协议 {longest.Protocol}），下一跳 {longest.NextHop}，出口 {longest.InterfaceAlias}";
+                // Destination 本身已含前缀长度（如 192.168.10.0/24），不再重复拼接
+                explanation = $"最长前缀匹配 {longest.Destination}" +
+                    (longest.Protocol.Length > 0 ? $"（路由来源 {longest.Protocol}）" : "") +
+                    $"，下一跳 {nextHop}，出口 {longest.InterfaceAlias}";
             }
         }
         catch (Exception ex)

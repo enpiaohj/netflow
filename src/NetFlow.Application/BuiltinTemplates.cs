@@ -213,7 +213,7 @@ public static class BuiltinTemplates
     {
         Id = "builtin.sql-server",
         Name = "SQL Server",
-        Description = "实例发现（Browser 1434）→ 返回端口 TCP → 可选登录",
+        Description = "默认实例直测 TCP 1433（命名实例经 Browser UDP 1434 发现端口）→ 可选登录",
         Direction = "客户端 → SQL Server",
         Version = Version,
         RequiredPermission = StandardPerm + "；登录测试需 SQL 凭据或 Windows 集成身份",
@@ -221,7 +221,7 @@ public static class BuiltinTemplates
         [
             new ScenarioStep
             {
-                Name = "实例发现 + TCP + 可选登录",
+                Name = "TCP 连接（默认 1433）+ 可选登录",
                 ProbeType = ProbeType.SqlServer,
                 Parameters = new Dictionary<string, string>
                 {

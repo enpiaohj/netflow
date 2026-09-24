@@ -52,6 +52,59 @@ public static class UiText
         return new SolidColorBrush(color);
     }
 
+    /// <summary>传输层结果（中文）。</summary>
+    public static string Transport(TransportOutcome t) => t switch
+    {
+        TransportOutcome.NotExecuted => "未执行",
+        TransportOutcome.Success => "成功",
+        TransportOutcome.Refused => "被拒绝",
+        TransportOutcome.Timeout => "超时",
+        TransportOutcome.Unreachable => "不可达",
+        TransportOutcome.NameResolutionFailed => "名称解析失败",
+        TransportOutcome.LocalError => "本机错误",
+        _ => t.ToString(),
+    };
+
+    /// <summary>协议层结果（中文）。</summary>
+    public static string Protocol(ProtocolOutcome p) => p switch
+    {
+        ProtocolOutcome.NotExecuted => "未执行",
+        ProtocolOutcome.NotSupported => "未支持",
+        ProtocolOutcome.Success => "成功",
+        ProtocolOutcome.ProtocolError => "协议错误",
+        ProtocolOutcome.ServiceError => "服务返回错误",
+        ProtocolOutcome.NoResponse => "无应答",
+        _ => p.ToString(),
+    };
+
+    /// <summary>探针类型名称（中文）。</summary>
+    public static string ProbeName(ProbeType t) => t switch
+    {
+        ProbeType.Dns => "DNS 解析",
+        ProbeType.TcpConnect => "TCP 连接",
+        ProbeType.UdpDatagram => "UDP 数据报",
+        ProbeType.IcmpPing => "ICMP Ping",
+        ProbeType.TraceRoute => "路径追踪",
+        ProbeType.Ntp => "NTP 时间同步",
+        ProbeType.Http => "HTTP 请求",
+        ProbeType.Tls => "TLS 证书",
+        ProbeType.Smtp => "SMTP",
+        ProbeType.Ldap => "LDAP",
+        ProbeType.SqlServer => "SQL Server",
+        ProbeType.Smb => "SMB",
+        ProbeType.Rdp => "远程桌面 RDP",
+        ProbeType.WinRm => "WinRM",
+        ProbeType.Ssh => "SSH",
+        ProbeType.LocalSystemSnapshot => "本机快照",
+        ProbeType.RemoteServiceQuery => "远程服务查询",
+        ProbeType.PacketCapture => "抓包",
+        _ => t.ToString(),
+    };
+
+    /// <summary>结果行标题：探针名称 + 端口（如“TCP 连接 445”）。</summary>
+    public static string ProbeTitle(ProbeRun run) =>
+        run.Parameters.Port is { } port ? $"{ProbeName(run.Parameters.ProbeType)} {port}" : ProbeName(run.Parameters.ProbeType);
+
     /// <summary>耗时显示：null/未完成一律"—"。</summary>
     public static string Elapsed(TimeSpan? elapsed) =>
         elapsed is { } e ? $"{(int)e.TotalMilliseconds} ms" : "—";

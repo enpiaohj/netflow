@@ -19,6 +19,7 @@ public partial class OverviewPage : UserControl
     {
         InitializeComponent();
         RecentGrid.ItemsSource = Recent;
+        UiState.Bind(TargetInput, "target");
         Loaded += async (_, _) =>
         {
             try
@@ -70,7 +71,7 @@ public partial class OverviewPage : UserControl
             {
                 StartLocal = r.Start?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "—",
                 Target = r.Target,
-                ScenarioName = r.ScenarioName ?? "自由测试",
+                ScenarioName = r.ScenarioName ?? "快速测试",
             });
         }
     }

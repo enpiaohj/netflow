@@ -15,13 +15,55 @@ public sealed class IcmpProbe : ProbeBase
 
     public override string DisplayName => "ICMP Ping";
 
+    /// <summary>
+    /// 发送一次回显。指定了 IPv4 源地址且目标为 IPv4 时走 IcmpSendEcho2Ex 真正绑定源地址；
+    /// 否则用 .NET Ping（无法绑定，由调用方标注限制）。
+    /// </summary>
+    private static async Task<(IPStatus Status, IPAddress? From, long RttMs)> SendOnceAsync(
+        IPAddress target, byte ttl, ProbeRequest request)
+    {
+        var timeoutMs = (int)request.Parameters.Timeout.TotalMilliseconds;
+        var payload = new byte[32];
+        if (request.SourceAddress is { AddressFamily: System.Net.Sockets.AddressFamily.InterNetwork } source &&
+            target.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        {
+            return await Task.Run(() => IcmpEchoV4.Send(source, target, timeoutMs, ttl, payload))
+                .ConfigureAwait(false);
+        }
+
+        using var ping = new Ping();
+        var reply = await ping.SendPingAsync(target, timeoutMs, payload, new PingOptions(ttl, true))
+            .ConfigureAwait(false);
+        return (reply.Status, reply.Address, reply.RoundtripTime);
+    }
+
+    /// <summary>本次请求能否真正绑定源地址（IPv4 源 + IPv4 目标）。</summary>
+    private static bool CanBindSource(IPAddress target, ProbeRequest request) =>
+        request.SourceAddress is { AddressFamily: System.Net.Sockets.AddressFamily.InterNetwork } &&
+        target.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
+
+    /// <summary>登记源地址：可绑定则记录实际源地址，否则如实标注限制且不写源地址。</summary>
+    private void RegisterSource(ProbeRun run, IPAddress target, ProbeRequest request, string scope)
+    {
+        if (request.SourceAddress is null) return;
+        if (CanBindSource(target, request))
+        {
+            run.SourceAddress = request.SourceAddress.ToString();
+            run.AddObservation(Observation.Now(
+                $"{scope}绑定源地址 {request.SourceAddress}（IcmpSendEcho2Ex）", DisplayName));
+        }
+        else
+        {
+            NoteSourceNotBindable(run, request, DisplayName, scope, "仅支持 IPv4 源地址访问 IPv4 目标");
+        }
+    }
+
     public async Task<ProbeRun> ExecuteAsync(IPAddress target, int sampleCount, ProbeRequest request)
     {
         var run = NewRun(request);
         var ct = request.CancellationToken;
         run.ResolvedAddresses = [target.ToString()];
-        // .NET Ping 不支持绑定源地址：不再把“请求的源地址”写成本次源地址
-        NoteSourceNotBindable(run, request, DisplayName, "ICMP 回显", "Windows ICMP 接口限制");
+        RegisterSource(run, target, request, "ICMP 回显");
 
         int replied = 0;
         var rttList = new List<long>();
@@ -29,17 +71,12 @@ public sealed class IcmpProbe : ProbeBase
         for (int i = 0; i < sampleCount; i++)
         {
             ct.ThrowIfCancellationRequested();
-            using var ping = new Ping();
-            var sw = Stopwatch.StartNew();
-            PingReply reply;
+            (IPStatus Status, IPAddress? From, long RttMs) reply;
             try
             {
-                var options = new PingOptions(64, true);
-                var buffer = new byte[32];
-                reply = await ping.SendPingAsync(target, (int)request.Parameters.Timeout.TotalMilliseconds,
-                    buffer, options).ConfigureAwait(false);
+                reply = await SendOnceAsync(target, 64, request).ConfigureAwait(false);
             }
-            catch (PingException ex)
+            catch (Exception ex) when (ex is PingException or System.ComponentModel.Win32Exception)
             {
                 run.AddObservation(Observation.Now($"Ping 发送失败：{ex.GetBaseException().Message}", DisplayName));
                 run.Transport = TransportOutcome.LocalError;
@@ -47,15 +84,14 @@ public sealed class IcmpProbe : ProbeBase
                 return run;
             }
 
-            sw.Stop();
             switch (reply.Status)
             {
                 case IPStatus.Success:
                     replied++;
-                    rttList.Add(reply.RoundtripTime);
+                    rttList.Add(reply.RttMs);
                     run.AddObservation(Observation.Now(
-                        $"样本 {i + 1}/{sampleCount}：回显应答，RTT {reply.RoundtripTime} ms" +
-                        (reply.Address is not null ? $"，来源 {reply.Address}" : ""), DisplayName));
+                        $"样本 {i + 1}/{sampleCount}：回显应答，RTT {reply.RttMs} ms" +
+                        (reply.From is not null ? $"，来源 {reply.From}" : ""), DisplayName));
                     break;
                 case IPStatus.TimedOut:
                     run.AddObservation(Observation.Now(
@@ -92,7 +128,7 @@ public sealed class IcmpProbe : ProbeBase
         var run = NewRun(request);
         var ct = request.CancellationToken;
         run.ResolvedAddresses = [target.ToString()];
-        NoteSourceNotBindable(run, request, DisplayName, "路径探测", "Windows ICMP 接口限制");
+        RegisterSource(run, target, request, "路径探测");
 
         for (int ttl = 1; ttl <= maxHops; ttl++)
         {
@@ -103,15 +139,12 @@ public sealed class IcmpProbe : ProbeBase
 
             for (int s = 0; s < samplesPerHop; s++)
             {
-                using var ping = new Ping();
-                PingReply reply;
+                (IPStatus Status, IPAddress? From, long RttMs) reply;
                 try
                 {
-                    reply = await ping.SendPingAsync(target,
-                        (int)request.Parameters.Timeout.TotalMilliseconds, new byte[32],
-                        new PingOptions(ttl, true)).ConfigureAwait(false);
+                    reply = await SendOnceAsync(target, (byte)ttl, request).ConfigureAwait(false);
                 }
-                catch (PingException)
+                catch (Exception ex) when (ex is PingException or System.ComponentModel.Win32Exception)
                 {
                     hopObservations.Add("探针错误");
                     continue;
@@ -121,9 +154,9 @@ public sealed class IcmpProbe : ProbeBase
                 {
                     case IPStatus.Success:
                     case IPStatus.TtlExpired:
-                        hopAddress ??= reply.Address?.ToString();
+                        hopAddress ??= reply.From?.ToString();
                         reachedTarget |= reply.Status == IPStatus.Success;
-                        hopObservations.Add($"RTT {reply.RoundtripTime} ms");
+                        hopObservations.Add($"RTT {reply.RttMs} ms");
                         break;
                     case IPStatus.TimedOut:
                         hopObservations.Add("未回复");

@@ -16,9 +16,9 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="TargetInput" Style="{StaticResource InputStyle}"
-                         Margin="0,0,10,0" Tag="输入 IP、域名或服务器名称，回车即开始快速测试"
-                         KeyDown="TargetInput_KeyDown"/>
+                <ComboBox x:Name="TargetInput" IsEditable="True" Margin="0,0,10,0"
+                          Tag="输入 IP 或主机名，回车开始快速测试"
+                          KeyDown="TargetInput_KeyDown"/>
                 <Button Grid.Column="1" x:Name="QuickTestButton" Content="快速测试"
                         Style="{StaticResource PrimaryButtonStyle}"
                         Margin="0,0,10,0" Click="QuickTest_Click"/>
@@ -42,13 +42,15 @@
                 </StackPanel>
             </Border>
 
-            <!-- 快速功能入口 -->
+            <!-- 快速入口 -->
             <Border Grid.Column="1" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock Text="快速功能入口" Style="{StaticResource SectionTitleStyle}"/>
-                    <UniformGrid Columns="3" Margin="0,8,0,0">
-                        <Button Content="TCP/UDP 端口" Style="{StaticResource SecondaryButtonStyle}"
-                                Margin="0,0,8,8" Click="QuickNav_Click" Tag="quicktest:tcpudp"/>
+                    <TextBlock Text="快速入口" Style="{StaticResource SectionTitleStyle}"/>
+                    <UniformGrid Columns="4" Margin="0,8,0,0">
+                        <Button Content="TCP 端口" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,8,8" Click="QuickNav_Click" Tag="quicktest:tcp"/>
+                        <Button Content="UDP 端口" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,8,8" Click="QuickNav_Click" Tag="quicktest:udp"/>
                         <Button Content="DNS 解析" Style="{StaticResource SecondaryButtonStyle}"
                                 Margin="0,0,8,8" Click="QuickNav_Click" Tag="quicktest:dns"/>
                         <Button Content="HTTP/TLS" Style="{StaticResource SecondaryButtonStyle}"
@@ -57,8 +59,10 @@
                                 Margin="0,0,8,0" Click="QuickNav_Click" Tag="quicktest:ping"/>
                         <Button Content="抓包分析" Style="{StaticResource SecondaryButtonStyle}"
                                 Margin="0,0,8,0" Click="QuickNav_Click" Tag="capture"/>
-                        <Button Content="服务检查" Style="{StaticResource SecondaryButtonStyle}"
-                                Click="QuickNav_Click" Tag="services"/>
+                        <Button Content="服务与日志" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,8,0" Click="QuickNav_Click" Tag="services"/>
+                        <Button Content="本机网络" Style="{StaticResource SecondaryButtonStyle}"
+                                Click="QuickNav_Click" Tag="localnet"/>
                     </UniformGrid>
                 </StackPanel>
             </Border>
@@ -76,7 +80,7 @@
                             <DataGridTextColumn Header="场景" Binding="{Binding ScenarioName}" Width="200"/>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <TextBlock Text="暂无诊断记录。执行场景诊断后，最近的任务会显示在这里">
+                    <TextBlock Text="暂无诊断记录">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
                                 <Setter Property="Visibility" Value="Collapsed"/>

@@ -56,4 +56,46 @@ public class SourceAdapterCatalogTests
         var option = SourceAdapterCatalog.Create("以太网", [Ip("2001:db8::10"), Ip("192.168.10.100")])!;
         Assert.Equal("以太网（192.168.10.100）", option.Display);
     }
+
+    private static SourceAdapterOption Opt(string name, bool gateway, SourceAdapterKind kind) =>
+        SourceAdapterCatalog.Create(name, [Ip("10.0.0.1")], gateway, kind)!;
+
+    [Fact]
+    public void PickDefault_优先带默认网关的以太网卡()
+    {
+        var vmnet = Opt("VMware VMnet1", gateway: false, SourceAdapterKind.Ethernet); // 虚拟网卡无网关
+        var wifi = Opt("WLAN", gateway: true, SourceAdapterKind.Wireless);
+        var eth = Opt("以太网", gateway: true, SourceAdapterKind.Ethernet);
+        var vpn = Opt("VPN", gateway: true, SourceAdapterKind.Other);
+
+        Assert.Equal("以太网", SourceAdapterCatalog.PickDefault([vmnet, wifi, vpn, eth])!.Name);
+    }
+
+    [Fact]
+    public void PickDefault_没有以太网时退到带网关的无线_再退到任意网卡()
+    {
+        var vmnet = Opt("VMware VMnet1", gateway: false, SourceAdapterKind.Ethernet);
+        var wifi = Opt("WLAN", gateway: true, SourceAdapterKind.Wireless);
+
+        Assert.Equal("WLAN", SourceAdapterCatalog.PickDefault([vmnet, wifi])!.Name);
+        Assert.Equal("VMware VMnet1", SourceAdapterCatalog.PickDefault([vmnet])!.Name);
+        Assert.Null(SourceAdapterCatalog.PickDefault([]));
+    }
+
+    [Fact]
+    public void Order_带网关优先_同级保持原顺序()
+    {
+        var a = Opt("A", gateway: false, SourceAdapterKind.Ethernet);
+        var b = Opt("B", gateway: true, SourceAdapterKind.Ethernet);
+        var c = Opt("C", gateway: true, SourceAdapterKind.Ethernet);
+
+        Assert.Equal(["B", "C", "A"], SourceAdapterCatalog.Order([a, b, c]).Select(o => o.Name));
+    }
+
+    [Fact]
+    public void Display_带默认网关的网卡加注()
+    {
+        Assert.Equal("以太网（10.0.0.1） · 默认网关", Opt("以太网", true, SourceAdapterKind.Ethernet).Display);
+        Assert.Equal("VMnet1（10.0.0.1）", Opt("VMnet1", false, SourceAdapterKind.Ethernet).Display);
+    }
 }

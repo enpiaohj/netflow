@@ -19,6 +19,7 @@ public partial class LocalNetworkPage : UserControl
         AdapterGrid.ItemsSource = Adapters;
         ListenerGrid.ItemsSource = Listeners;
         FirewallGrid.ItemsSource = FirewallRules;
+        UiState.Bind(RouteTargetInput, "ip");
         Loaded += async (_, _) => await LoadAsync().ConfigureAwait(true);
     }
 
@@ -31,7 +32,7 @@ public partial class LocalNetworkPage : UserControl
             Adapters.Add(new AdapterRow
             {
                 Name = a.Name,
-                Status = a.Status.ToString(),
+                Status = AdapterStatusText(a.Status),
                 Ipv4 = string.Join(", ", a.Ipv4Addresses),
                 Prefixes = string.Join(", ", a.Ipv4Prefixes),
                 Gateways = string.Join(", ", a.Gateways),
@@ -50,27 +51,65 @@ public partial class LocalNetworkPage : UserControl
         }
         catch (Exception ex)
         {
-            AppServices.Instance.PublishStatus($"端口表读取失败：{ex.Message}");
+            AppServices.Instance.PublishStatus($"无法读取端口列表：{ex.Message}");
         }
     }
+
+    private static string AdapterStatusText(System.Net.NetworkInformation.OperationalStatus status) => status switch
+    {
+        System.Net.NetworkInformation.OperationalStatus.Up => "已连接",
+        System.Net.NetworkInformation.OperationalStatus.Down => "已断开",
+        System.Net.NetworkInformation.OperationalStatus.NotPresent => "设备不存在",
+        System.Net.NetworkInformation.OperationalStatus.LowerLayerDown => "下层断开",
+        System.Net.NetworkInformation.OperationalStatus.Dormant => "休眠",
+        System.Net.NetworkInformation.OperationalStatus.Testing => "测试中",
+        _ => "未知",
+    };
+
+    // 防火墙枚举值：兼容名称与数字两种输出（旧版脚本以数字输出）
+    private static string DirectionText(string v) => v switch
+    {
+        "Inbound" or "1" => "入站",
+        "Outbound" or "2" => "出站",
+        _ => v,
+    };
+
+    private static string ActionText(string v) => v switch
+    {
+        "Allow" or "2" => "允许",
+        "Block" or "4" => "阻止",
+        "NotConfigured" or "0" => "未配置",
+        _ => v,
+    };
+
+    private static string ProtocolText(string v) => v switch
+    {
+        "Any" or "256" or "" => "任意",
+        "6" => "TCP",
+        "17" => "UDP",
+        "1" => "ICMPv4",
+        "58" => "ICMPv6",
+        _ => v,
+    };
 
     private async void Route_Click(object sender, RoutedEventArgs e)
     {
         if (!IPAddress.TryParse(RouteTargetInput.Text.Trim(), out var target))
         {
-            RouteResult.Text = "目标地址需为有效的 IP 地址";
+            RouteResult.Text = "请输入有效的 IP 地址";
             RouteTargetInput.Focus();
             return;
         }
-        RouteResult.Text = "查询中…";
+        UiState.Remember(RouteTargetInput, "ip");
+        RouteResult.Text = "正在查询…";
         var selection = await NetworkProfileCollector.SelectRouteAsync(target)
             .ConfigureAwait(true);
         RouteResult.Text =
             $"目标：{selection.Target}\n" +
-            $"本次真实源地址：{selection.SourceAddress ?? "—"}\n" +
+            $"源地址：{selection.SourceAddress ?? "—"}\n" +
             $"下一跳：{selection.NextHop ?? "—"}\n" +
             $"出口接口：{selection.Interface ?? "—"}\n" +
-            $"核对：{selection.Explanation ?? "—"}\n";
+            $"路由匹配：{selection.Explanation ?? "—"}\n";
     }
 
     private async void Firewall_Click(object sender, RoutedEventArgs e)
@@ -85,9 +124,9 @@ public partial class LocalNetworkPage : UserControl
                 FirewallRules.Add(new FirewallRow
                 {
                     DisplayName = r.DisplayName,
-                    Direction = r.Direction,
-                    Action = r.Action,
-                    Protocol = r.Protocol,
+                    Direction = DirectionText(r.Direction),
+                    Action = ActionText(r.Action),
+                    Protocol = ProtocolText(r.Protocol),
                     LocalPorts = r.LocalPorts,
                     Program = r.Program,
                     Enabled = r.Enabled ? "是" : "否",
@@ -96,7 +135,7 @@ public partial class LocalNetworkPage : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"防火墙规则读取失败：{ex.Message}", "NetFlow");
+            MessageBox.Show($"无法读取防火墙规则：{ex.Message}", "NetFlow");
         }
     }
 }

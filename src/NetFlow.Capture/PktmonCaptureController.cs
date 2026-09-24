@@ -24,6 +24,9 @@ public sealed record CaptureStartOptions
     /// <summary>每包截断长度（字节），0 = 完整包。</summary>
     public int SnapLengthBytes { get; init; } = 128;
 
+    /// <summary>采集模式：<see cref="CaptureParams.RecordMode"/>（默认）或 <see cref="CaptureParams.LiveMode"/>。</summary>
+    public string Mode { get; init; } = CaptureParams.RecordMode;
+
     /// <summary>环形缓冲区（MB），范围 16–1024。</summary>
     public int RingBufferMb { get; init; } = 256;
 
@@ -37,6 +40,7 @@ public sealed record CaptureStartOptions
             MaxDurationSeconds = MaxDurationSeconds,
             SnapLengthBytes = SnapLengthBytes,
             RingBufferMb = RingBufferMb,
+            Mode = Mode,
         };
 }
 
@@ -58,16 +62,27 @@ public sealed record CaptureStopResult
 /// </summary>
 public sealed class PktmonCaptureController : ITaskCaptureHook
 {
+    /// <summary>
+    /// 自宿主开关：主程序以该参数（+ --params）重新启动自身作为提权采集宿主，
+    /// 这样单个 exe 即可抓包，无需旁边再放 NetFlow.CaptureHost.exe。
+    /// </summary>
+    public const string SelfHostSwitch = "--capture-host";
+
     private readonly string _evidenceRoot;
     private readonly string _captureHostPath;
+    private readonly string _hostArgumentPrefix;
 
     /// <summary>本控制器预创建的停止事件句柄：保持存活以维持事件名存在，
     /// 直到停止完成（此前版本创建后立即释放，名称即被销毁）。</summary>
     private EventWaitHandle? _stopEvent;
 
-    public PktmonCaptureController(string evidenceRoot, string? captureHostPath = null)
+    /// <param name="captureHostPath">宿主可执行文件；缺省取与应用同目录的 NetFlow.CaptureHost.exe。</param>
+    /// <param name="hostArgumentPrefix">宿主参数前缀；自宿主时传 <see cref="SelfHostSwitch"/>。</param>
+    public PktmonCaptureController(
+        string evidenceRoot, string? captureHostPath = null, string? hostArgumentPrefix = null)
     {
         _evidenceRoot = evidenceRoot;
+        _hostArgumentPrefix = string.IsNullOrEmpty(hostArgumentPrefix) ? "" : hostArgumentPrefix + " ";
         // 默认取与应用同目录的采集宿主；缺失时在启动阶段即暴露
         _captureHostPath = captureHostPath ??
             Path.Combine(AppContext.BaseDirectory, "NetFlow.CaptureHost.exe");
@@ -83,6 +98,14 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
     public static string StatusFilePathFor(string runDir) =>
         Path.Combine(runDir, "capture-status.json");
 
+    /// <summary>实时模式的输出文件（宿主写入、界面轮询读取）。</summary>
+    public static string LiveLogPathFor(string runDir) =>
+        Path.Combine(runDir, "live.log");
+
+    /// <summary>某次任务的抓包工作目录。</summary>
+    public string RunDirFor(RunId runId) =>
+        Path.Combine(_evidenceRoot, runId.ToString(), "capture");
+
     public async Task<(bool Started, string? Reason)> StartAsync(
         RunId runId, IPAddress target, CancellationToken ct) =>
         await StartAsync(runId, target, new CaptureStartOptions(), ct).ConfigureAwait(false);
@@ -92,7 +115,7 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
     {
         if (!File.Exists(_captureHostPath))
         {
-            LastNote = $"采集宿主缺失：{_captureHostPath}。已降级为纯网络测试与导入分析。";
+            LastNote = $"找不到抓包程序：{_captureHostPath}。抓包不可用，其他功能不受影响。";
             return (false, LastNote);
         }
 
@@ -100,7 +123,7 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
         var capability = await DetectCapabilityAsync(ct).ConfigureAwait(false);
         if (!capability.Available)
         {
-            LastNote = $"Pktmon 不可用：{capability.Error ?? "未知原因"}。已降级为纯网络测试与导入分析。";
+            LastNote = $"无法使用 Pktmon：{capability.Error ?? "未知原因"}。抓包不可用，仍可进行网络测试和导入分析。";
             return (false, LastNote);
         }
 
@@ -140,7 +163,7 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
         var psi = new ProcessStartInfo
         {
             FileName = _captureHostPath,
-            Arguments = $"--params \"{paramsFile}\"",
+            Arguments = $"{_hostArgumentPrefix}--params \"{paramsFile}\"",
             UseShellExecute = true, // runas 需要
             Verb = "runas",         // 一次性 UAC 提升
             WindowStyle = ProcessWindowStyle.Hidden,
@@ -150,7 +173,7 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
             using var process = Process.Start(psi);
             if (process is null)
             {
-                LastNote = "采集宿主启动失败（系统未返回进程句柄）";
+                LastNote = "无法启动抓包进程。";
                 return (false, LastNote);
             }
 
@@ -164,8 +187,8 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
                 if (File.Exists(statusFile)) break; // 宿主已写出初始状态
                 if (process.HasExited)
                 {
-                    LastNote = $"采集宿主启动后立即退出（code {process.ExitCode}）。" +
-                        "常见原因：宿主文件部署不完整（缺 dll/runtimeconfig）或策略阻止。";
+                    LastNote = $"抓包进程启动后立即退出（代码 {process.ExitCode}）。" +
+                        "可能是程序文件不完整，或被安全策略阻止。";
                     AppLog.Error(LastNote ?? "采集宿主立即退出");
                     return (false, LastNote);
                 }
@@ -175,12 +198,12 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
         {
             // 用户在 UAC 拒绝提升（1223）或其他启动失败
             LastNote = ex.NativeErrorCode == 1223
-                ? "用户未授予管理员权限，本次不抓包，仅执行普通探针。"
-                : $"采集宿主启动失败（Win32 错误 {ex.NativeErrorCode}）：{ex.Message}";
+                ? "未获得管理员权限，无法抓包。其他检测不受影响。"
+                : $"无法启动抓包进程（Win32 错误 {ex.NativeErrorCode}）：{ex.Message}";
             return (false, LastNote);
         }
 
-        LastNote = "抓包已启动（提权宿主运行中）";
+        LastNote = "抓包已开始";
         return (true, LastNote);
     }
 
@@ -224,9 +247,11 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
                 _stopEvent?.Dispose();
                 _stopEvent = null;
                 var note = status.Error
-                    ?? (status.PcapngPath is null
-                        ? "抓包已结束，但 PCAPNG 转换未产出；ETL 原始证据已保留"
-                        : "抓包已结束");
+                    ?? (status.Mode == CaptureParams.LiveMode
+                        ? "实时抓包已结束（未保存文件）"
+                        : status.PcapngPath is null
+                            ? "抓包已结束，但未能生成 PCAPNG。原始 ETL 文件已保留。"
+                            : "抓包已结束");
                 return new CaptureStopResult
                 {
                     PcapngPath = status.PcapngPath,
@@ -241,7 +266,7 @@ public sealed class PktmonCaptureController : ITaskCaptureHook
         return new CaptureStopResult
         {
             PcapngPath = null,
-            Note = "等待采集宿主结束超时；可再次点击停止重试，宿主也会在最长时长后自行结束",
+            Note = "等待抓包进程结束超时。可再次点击“停止”，抓包进程也将在最长时长到达后自动结束。",
             TimedOut = true,
         };
     }

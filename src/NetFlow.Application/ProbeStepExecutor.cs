@@ -79,7 +79,8 @@ public sealed class ProbeStepExecutor
                 .ExecuteAsync(
                     target,
                     _request.SqlInstanceName,
-                    _request.SqlFixedPort,
+                    // 未指定实例名时按默认实例直测 TCP 1433，不依赖 SQL Browser（UDP 1434 常被关闭/拦截）
+                    _request.SqlFixedPort ?? (string.IsNullOrWhiteSpace(_request.SqlInstanceName) ? 1433 : null),
                     _request.SqlCredential,
                     _request.TrySqlLogin,
                     probeRequest).ConfigureAwait(false),

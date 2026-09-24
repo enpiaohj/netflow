@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="NetFlow｜网络与服务诊断"
         Icon="Assets/NetFlow.ico"
-        Height="780" Width="1280" MinHeight="640" MinWidth="1080"
+        Height="860" Width="1360" MinHeight="680" MinWidth="1100"
         FontFamily="Segoe UI, Microsoft YaHei UI" FontSize="13"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource WindowBackground}">
@@ -28,24 +28,78 @@
                                Foreground="{StaticResource TextSecondary}"/>
                 </StackPanel>
                 <StackPanel Margin="0,12,0,0">
-                    <RadioButton x:Name="NavOverview" Content="🏠  总览" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" IsChecked="True" Checked="Nav_Checked" Tag="overview"/>
-                    <RadioButton Content="⚡  快速测试" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" Checked="Nav_Checked" Tag="quicktest"/>
-                    <RadioButton Content="🧭  场景诊断" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" Checked="Nav_Checked" Tag="scenario"/>
-                    <RadioButton Content="📡  抓包分析" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" Checked="Nav_Checked" Tag="capture"/>
-                    <RadioButton Content="🖥  服务与日志" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" Checked="Nav_Checked" Tag="services"/>
-                    <RadioButton Content="🌐  本机网络" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" Checked="Nav_Checked" Tag="localnet"/>
-                    <RadioButton Content="🗂  批量任务" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" Checked="Nav_Checked" Tag="batch"/>
-                    <RadioButton Content="🕘  历史报告" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" Checked="Nav_Checked" Tag="history"/>
-                    <RadioButton Content="⚙  设置" Style="{StaticResource NavButtonStyle}"
-                                 GroupName="nav" Checked="Nav_Checked" Tag="settings"/>
+                    <RadioButton AutomationProperties.Name="总览" x:Name="NavOverview"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" IsChecked="True" Checked="Nav_Checked" Tag="overview">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="总览" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton AutomationProperties.Name="快速测试"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="quicktest">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE945;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="快速测试" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton AutomationProperties.Name="场景诊断"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="scenario">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="场景诊断" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton AutomationProperties.Name="抓包分析"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="capture">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE968;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="抓包分析" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton AutomationProperties.Name="服务与日志"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="services">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="服务与日志" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton AutomationProperties.Name="本机网络"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="localnet">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE774;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="本机网络" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton AutomationProperties.Name="批量任务"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="batch">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE71D;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="批量任务" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton AutomationProperties.Name="历史报告"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="history">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="历史报告" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton AutomationProperties.Name="设置"  Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="settings">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets, Segoe Fluent Icons"
+                                       FontSize="15" Width="26" VerticalAlignment="Center"/>
+                            <TextBlock Text="设置" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -68,10 +122,11 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                         <TextBlock Text="源网卡：" Foreground="{StaticResource TextSecondary}"
                                    VerticalAlignment="Center"/>
-                        <ComboBox x:Name="SourceAdapterCombo" Width="330" Height="28" Margin="0,0,20,0"
+                        <ComboBox x:Name="SourceAdapterCombo" Width="360" Margin="0,0,20,0"
+                                  Padding="8,3,26,3" FontSize="13"
                                   DisplayMemberPath="Display" VerticalContentAlignment="Center"
                                   SelectionChanged="SourceAdapterCombo_SelectionChanged"
-                                  ToolTip="测试出包所用的本机网卡。选择后，快速测试/场景诊断/批量任务会绑定该网卡的地址；ICMP、LDAP 等无法绑定的探针会如实标注"/>
+                                  ToolTip="测试使用的源网卡（默认：带默认网关的以太网卡）。LDAP、SQL 登录阶段无法指定源地址，结果中将注明"/>
                         <TextBlock Text="状态：" Foreground="{StaticResource TextSecondary}"
                                    VerticalAlignment="Center"/>
                         <TextBlock x:Name="StatusText" Text="就绪" VerticalAlignment="Center"
@@ -82,7 +137,7 @@
                                 Click="ActivityButton_Click" Cursor="Hand"
                                 Background="#FFF7ED" BorderBrush="#FED7AA"
                                 BorderThickness="1" Padding="10,3" Margin="0,0,14,0"
-                                ToolTip="点击跳转到运行中的任务页面">
+                                ToolTip="转到运行中的任务">
                             <TextBlock x:Name="ActivityText" Text="● 运行中"
                                        Foreground="#C2410C" FontSize="12"
                                        TextTrimming="CharacterEllipsis" MaxWidth="420"/>

@@ -11,7 +11,10 @@
         <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <RadioButton x:Name="TabTcpUdp" Content="TCP/UDP 端口" IsChecked="True" Tag="tcpudp"
+                    <RadioButton x:Name="TabTcp" Content="TCP 端口" IsChecked="True" Tag="tcp"
+                                 GroupName="quicktype" Style="{StaticResource SegmentButtonStyle}"
+                                 Checked="Type_Checked"/>
+                    <RadioButton x:Name="TabUdp" Content="UDP 端口" Tag="udp"
                                  GroupName="quicktype" Style="{StaticResource SegmentButtonStyle}"
                                  Checked="Type_Checked"/>
                     <RadioButton x:Name="TabDns" Content="DNS 解析" Tag="dns"
@@ -38,28 +41,43 @@
 
                     <StackPanel Grid.Column="0" Margin="0,0,12,0">
                         <TextBlock Text="目标地址" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TargetInput" Tag="IP、域名或服务器名称"
-                                 KeyDown="TargetInput_KeyDown"/>
+                        <ComboBox x:Name="TargetInput" IsEditable="True" Tag="IP 或主机名"
+                                  KeyDown="TargetInput_KeyDown"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" x:Name="PortPanel" Width="110" Margin="0,0,12,0">
-                        <TextBlock Text="端口" Style="{StaticResource FieldLabelStyle}"/>
-                        <ComboBox x:Name="PortInput" IsEditable="True" Height="34" FontSize="14"
-                                  VerticalContentAlignment="Center"
-                                  ToolTip="可直接输入 1–65535，或从常用端口中选择">
-                            <ComboBoxItem IsSelected="True">445</ComboBoxItem>
-                            <ComboBoxItem>53</ComboBoxItem>
-                            <ComboBoxItem>88</ComboBoxItem>
-                            <ComboBoxItem>389</ComboBoxItem>
-                            <ComboBoxItem>443</ComboBoxItem>
-                            <ComboBoxItem>1433</ComboBoxItem>
-                            <ComboBoxItem>3389</ComboBoxItem>
-                        </ComboBox>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <StackPanel x:Name="PortPanel" Width="190" Margin="0,0,12,0">
+                            <TextBlock Text="端口" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="PortInput" IsEditable="True"
+                                      ToolTip="可选择常见端口，或直接输入 1–65535"/>
+                        </StackPanel>
+                        <StackPanel x:Name="UdpModePanel" Width="230" Margin="0,0,12,0" Visibility="Collapsed">
+                            <TextBlock Text="UDP 测试方式" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="UdpModeInput" SelectedIndex="0"
+                                      ToolTip="123 端口可分别或同时执行原始 UDP 与 NTP 协议测试">
+                                <ComboBoxItem>自动</ComboBoxItem>
+                                <ComboBoxItem>原始 UDP</ComboBoxItem>
+                                <ComboBoxItem>NTP 协议（123）</ComboBoxItem>
+                                <ComboBoxItem>原始 UDP + NTP</ComboBoxItem>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel x:Name="DnsServerPanel" Width="190" Margin="0,0,12,0" Visibility="Collapsed">
+                            <TextBlock Text="DNS 服务器" Style="{StaticResource FieldLabelStyle}"/>
+                            <ComboBox x:Name="DnsServerInput" IsEditable="True"
+                                      ToolTip="默认使用源网卡的 DNS 服务器，也可指定其他 DNS 服务器 IP"/>
+                        </StackPanel>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Width="90" Margin="0,0,12,0">
                         <TextBlock Text="超时（秒）" Style="{StaticResource FieldLabelStyle}"/>
-                        <TextBox x:Name="TimeoutInput" Text="3"/>
+                        <ComboBox x:Name="TimeoutInput" IsEditable="True">
+                            <ComboBoxItem>1</ComboBoxItem>
+                            <ComboBoxItem>2</ComboBoxItem>
+                            <ComboBoxItem IsSelected="True">3</ComboBoxItem>
+                            <ComboBoxItem>5</ComboBoxItem>
+                            <ComboBoxItem>10</ComboBoxItem>
+                            <ComboBoxItem>30</ComboBoxItem>
+                        </ComboBox>
                     </StackPanel>
 
                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
@@ -94,7 +112,7 @@
                         <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}"
                                   SelectionChanged="ResultRow_Selected">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="探针" Binding="{Binding Probe}" Width="*"/>
+                                <DataGridTextColumn Header="检查项" Binding="{Binding Probe}" Width="*"/>
                                 <DataGridTemplateColumn Header="结论" Width="96">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
@@ -105,12 +123,12 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="100"/>
-                                <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="100"/>
+                                <DataGridTextColumn Header="传输层" Binding="{Binding Transport}" Width="100"/>
+                                <DataGridTextColumn Header="协议层" Binding="{Binding Protocol}" Width="100"/>
                                 <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="80"/>
                             </DataGrid.Columns>
                         </DataGrid>
-                        <TextBlock Text="填写目标后点击“开始测试”，结果显示在这里">
+                        <TextBlock Text="填写目标后，点击“开始测试”">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -129,13 +147,26 @@
 
             <Border Grid.Column="1" Style="{StaticResource CardStyle}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" x:Name="EvidenceTitle" Text="观察事实与证据"
-                               Style="{StaticResource SectionTitleStyle}"/>
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="EvidenceTitle" Text="测试摘要" VerticalAlignment="Center"
+                                   Style="{StaticResource SectionTitleStyle}"/>
+                        <Button Grid.Column="1" x:Name="SummaryButton" Content="返回摘要" Margin="0,0,6,0"
+                                Style="{StaticResource CompactButtonStyle}" Visibility="Collapsed"
+                                Click="Summary_Click"/>
+                        <Button Grid.Column="2" x:Name="AiButton" Content="AI 分析"
+                                Style="{StaticResource CompactButtonStyle}" Visibility="Collapsed"
+                                ToolTip="将测试结果（已脱敏）发送给 AI 分析" Click="Ai_Click"/>
+                    </Grid>
                     <TextBox x:Name="DetailBox" IsReadOnly="True" TextWrapping="Wrap"
                              BorderThickness="0" Background="Transparent"
                              FontFamily="Consolas" FontSize="12" VerticalContentAlignment="Top"
                              VerticalScrollBarVisibility="Auto"
-                             Tag="选择左侧一行结果查看观察事实、结论依据与限制"
+                             Tag="测试完成后显示摘要；选择左侧结果行查看该项证据"
                              AcceptsReturn="True" Margin="0,6,0,0"/>
                 </DockPanel>
             </Border>

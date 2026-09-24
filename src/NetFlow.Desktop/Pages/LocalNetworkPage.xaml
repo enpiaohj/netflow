@@ -27,8 +27,8 @@
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
                         <StackPanel Margin="0,0,10,0">
                             <TextBlock Text="目标地址（IP）" Style="{StaticResource FieldLabelStyle}"/>
-                            <TextBox x:Name="RouteTargetInput" Width="220"
-                                     Tag="如 192.168.1.10"/>
+                            <ComboBox x:Name="RouteTargetInput" IsEditable="True" Width="240"
+                                      Tag="如 192.168.1.10"/>
                         </StackPanel>
                         <Button Content="查询路由" Style="{StaticResource SecondaryButtonStyle}"
                                 VerticalAlignment="Bottom" Click="Route_Click"/>
@@ -37,7 +37,7 @@
                              BorderThickness="0" Background="Transparent" TextWrapping="Wrap"
                              AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
                              VerticalContentAlignment="Top"
-                             Tag="输入目标 IP，查看本机到该地址的真实源地址、下一跳与出口接口"/>
+                             Tag="输入目标 IP，查看源地址、下一跳与出口接口"/>
                 </DockPanel>
             </Border>
         </TabItem>
@@ -60,17 +60,17 @@
             <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top"
-                               Text="规则展示是配置证据，不构成流量真实被放行的证明。"
+                               Text="规则仅为配置信息，不能证明流量实际被放行。"
                                FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,6"/>
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
-                        <Button Content="加载规则（可能耗时）" Style="{StaticResource SecondaryButtonStyle}"
+                        <Button Content="加载规则" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="Firewall_Click"/>
                     </StackPanel>
                     <DataGrid x:Name="FirewallGrid" Style="{StaticResource DataGridStyle}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="名称" Binding="{Binding DisplayName}" Width="220"/>
                             <DataGridTextColumn Header="方向" Binding="{Binding Direction}" Width="70"/>
-                            <DataGridTextColumn Header="动作" Binding="{Binding Action}" Width="70"/>
+                            <DataGridTextColumn Header="操作" Binding="{Binding Action}" Width="70"/>
                             <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="70"/>
                             <DataGridTextColumn Header="本地端口" Binding="{Binding LocalPorts}" Width="120"/>
                             <DataGridTextColumn Header="程序" Binding="{Binding Program}" Width="*"/>

@@ -1,3 +1,5 @@
+using NetFlow.Capture;
+
 namespace NetFlow.CaptureHost;
 
 /// <summary>

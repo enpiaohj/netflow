@@ -8,7 +8,7 @@ namespace NetFlow.Persistence;
 /// - 保存任务、探针、发现、证据元数据；原始证据独立文件不进 BLOB
 /// - 迁移带版本号；受控单写队列；短事务
 /// </summary>
-public sealed class DiagnosisRepository : IAsyncDisposable
+public sealed partial class DiagnosisRepository : IAsyncDisposable
 {
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly SqliteConnection _connection;
@@ -121,6 +121,27 @@ public sealed class DiagnosisRepository : IAsyncDisposable
             CREATE INDEX IF NOT EXISTS idx_findings_run ON findings(run_id);
             CREATE INDEX IF NOT EXISTS idx_evidences_run ON evidences(run_id);
             CREATE INDEX IF NOT EXISTS idx_runs_start ON runs(start_utc);
+
+            -- schema v2：应用设置、端口包、最近输入（用户数据；升级只增表不动旧表）
+            CREATE TABLE IF NOT EXISTS app_settings (
+              key TEXT PRIMARY KEY,
+              value TEXT NOT NULL,
+              updated_utc TEXT NOT NULL);
+
+            CREATE TABLE IF NOT EXISTS port_packs (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL UNIQUE,
+              description TEXT NOT NULL DEFAULT '',
+              entries TEXT NOT NULL,
+              updated_utc TEXT NOT NULL);
+
+            CREATE TABLE IF NOT EXISTS recent_inputs (
+              kind TEXT NOT NULL,
+              value TEXT NOT NULL,
+              last_used_utc TEXT NOT NULL,
+              PRIMARY KEY (kind, value));
+
+            INSERT OR IGNORE INTO schema_version (version, applied_utc) VALUES (2, datetime('now'));
             """;
         await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         await tx.CommitAsync(ct).ConfigureAwait(false);

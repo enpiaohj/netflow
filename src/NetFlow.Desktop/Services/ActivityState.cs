@@ -4,7 +4,7 @@ namespace NetFlow.Desktop.Services;
 
 /// <summary>
 /// 全局活动任务指示（设计文档 3.1：顶栏始终可见任务状态；
-/// 切换页面不停止任务，用户需要在任何页面看到"有任务在跑"并能跳回去）。
+/// 切换页面不停止任务，用户需要在任何页面看到"任务运行中"并能跳回去）。
 /// </summary>
 public static class ActivityState
 {

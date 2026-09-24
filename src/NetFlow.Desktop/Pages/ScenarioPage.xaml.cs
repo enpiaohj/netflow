@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using NetFlow.Application;
+using NetFlow.Application.Ai;
 using NetFlow.Desktop.Services;
 using System.IO;
 using NetFlow.Domain;
@@ -19,7 +20,11 @@ public partial class ScenarioPage : UserControl
     {
         InitializeComponent();
         ResultGrid.ItemsSource = Rows;
+        UiState.Bind(TargetInput, "target");
+        UiState.Bind(DomainInput, "domain");
         ReloadTemplates();
+        TemplateList.SelectionChanged += (_, _) => UpdateTemplateInfo();
+        UpdateTemplateInfo();
         Loaded += (_, _) =>
         {
             if (NavigationState.PendingScenarioRun is { } rerun)
@@ -36,10 +41,13 @@ public partial class ScenarioPage : UserControl
     private void ReloadTemplates()
     {
         var items = new List<TemplateItem>();
+        // 列表项只显示名称（版本号会让名称过长），版本/来源/方向显示在列表下方的信息行
         foreach (var t in BuiltinTemplates.All)
-            items.Add(new TemplateItem(t.Id, $"{t.Name}（内置 v{t.Version}）", t.Direction, null));
+            items.Add(new TemplateItem(t.Id, t.Name, t.Direction, null, $"{t.Version}",
+                t.Steps.Any(st => st.ProbeType == ProbeType.SqlServer)));
         foreach (var u in AppServices.Instance.UserTemplates.All)
-            items.Add(new TemplateItem(u.Id, $"{u.Name}（自定义 v{u.Version}）", u.Direction, u.Id));
+            items.Add(new TemplateItem(u.Id, $"{u.Name}（自定义）", u.Direction, u.Id, $"{u.Version}",
+                u.Steps.Any(st => st.ProbeType == ProbeType.SqlServer)));
         TemplateList.ItemsSource = items;
         if (TemplateList.SelectedIndex < 0) TemplateList.SelectedIndex = 0;
     }
@@ -49,7 +57,7 @@ public partial class ScenarioPage : UserControl
         if (TemplateList.SelectedItem is not TemplateItem item) return;
         if (item.UserFileId is not null)
         {
-            MessageBox.Show("已是自定义模板；后续版本提供可视化编辑器，当前可编辑 user-templates.json。", "NetFlow");
+            MessageBox.Show("这已是自定义模板。当前请直接编辑 user-templates.json，后续版本将提供编辑器。", "NetFlow");
             return;
         }
         var source = BuiltinTemplates.Find(item.Id);
@@ -58,10 +66,28 @@ public partial class ScenarioPage : UserControl
         var name = source.Name + "（副本）";
         AppServices.Instance.UserTemplates.CreateFromBuiltin(source, name);
         ReloadTemplates();
-        AppServices.Instance.PublishStatus($"已创建用户模板：{name}（内置模板只读，编辑副本递增版本，不影响历史报告）");
+        AppServices.Instance.PublishStatus($"已创建自定义模板“{name}”。内置模板为只读，修改副本不会影响历史报告。");
     }
 
-    private sealed record TemplateItem(string Id, string Name, string Direction, string? UserFileId);
+    private sealed record TemplateItem(
+        string Id, string Name, string Direction, string? UserFileId, string Version, bool UsesSql)
+    {
+        // 自动化名称/读屏取 ToString，避免显示 record 默认文本
+        public override string ToString() => Name;
+    }
+
+    /// <summary>选中模板的来源、版本与方向。</summary>
+    private void UpdateTemplateInfo()
+    {
+        // SQL Server 场景显示“实例/端口”输入（此类场景用不到域），其余显示“域”
+        var usesSql = TemplateList.SelectedItem is TemplateItem { UsesSql: true };
+        SqlPanel.Visibility = usesSql ? Visibility.Visible : Visibility.Collapsed;
+        DomainPanel.Visibility = usesSql ? Visibility.Collapsed : Visibility.Visible;
+
+        TemplateInfo.Text = TemplateList.SelectedItem is TemplateItem t
+            ? $"{(t.UserFileId is null ? "内置模板" : "自定义模板")} v{t.Version}\n方向：{t.Direction}"
+            : "";
+    }
 
     private async void Run_Click(object sender, RoutedEventArgs e)
     {
@@ -88,12 +114,26 @@ public partial class ScenarioPage : UserControl
             return;
         }
 
+        var sqlTarget = item.UsesSql
+            ? SqlTargetParser.Parse(SqlInput.Text)
+            : new SqlTargetParser.Result(null, null, null);
+        if (sqlTarget.Error is not null)
+        {
+            ProgressText.Text = sqlTarget.Error;
+            SqlInput.Focus();
+            return;
+        }
+
+        UiState.Remember(TargetInput, "target");
+        if (domain.Length > 0) UiState.Remember(DomainInput, "domain");
+        AiButton.IsEnabled = false;
+
         RunButton.IsEnabled = false;
         StopButton.IsEnabled = true;
         ExportButton.IsEnabled = false;
         Rows.Clear();
         EvidenceBox.Clear();
-        ProgressText.Text = "准备中…";
+        ProgressText.Text = "正在准备…";
         _cts = new CancellationTokenSource();
         ActivityState.Begin(this, "scenario", $"场景诊断 {target}");
 
@@ -103,6 +143,8 @@ public partial class ScenarioPage : UserControl
             ScenarioId = item.Id,
             DomainName = domain.Length > 0 ? domain : null,
             SourceAddress = source,
+            SqlInstanceName = sqlTarget.InstanceName,
+            SqlFixedPort = sqlTarget.Port,
             Timeout = TimeSpan.FromSeconds(3),
         };
 
@@ -137,12 +179,13 @@ public partial class ScenarioPage : UserControl
         catch (Exception ex)
         {
             AppLog.Error("场景诊断执行异常", ex);
-            ProgressText.Text = $"执行异常：{ex.Message}";
+            ProgressText.Text = $"执行失败：{ex.Message}";
             return;
         }
         finally
         {
             // 取消/异常路径在此统一恢复按钮状态（成功路径下方会再更新进度文本）
+            ActivityState.End(this);
             RunButton.IsEnabled = true;
             StopButton.IsEnabled = false;
             ExportButton.IsEnabled = true;
@@ -150,21 +193,21 @@ public partial class ScenarioPage : UserControl
         _lastRun = outcome.Run;
         RenderRun(_lastRun);
 
-        // 报告导出到证据目录
+        // 报告导出到证据文件夹
         var artifacts = services.ReportExport.ExportAll(_lastRun, services.EvidenceRoot);
         foreach (var a in artifacts)
             _lastRun.Artifacts.Add(a);
         await services.SaveRunSafeAsync(_lastRun).ConfigureAwait(true);
 
         ProgressText.Text = _lastRun.TerminationReason is null
-            ? $"完成：{_lastRun.Probes.Count} 项检查"
+            ? $"已完成：{_lastRun.Probes.Count} 项检查"
             : $"已终止：{_lastRun.TerminationReason}";
     }
 
     private async void Stop_Click(object sender, RoutedEventArgs e)
     {
         _cts?.Cancel();
-        ProgressText.Text = "取消中…";
+        ProgressText.Text = "正在取消…";
         await Task.CompletedTask.ConfigureAwait(true);
     }
 
@@ -199,11 +242,11 @@ public partial class ScenarioPage : UserControl
             Rows.Add(new ScenarioStepRow
             {
                 No = no,
-                Name = p.Parameters.Extra.TryGetValue("__stepName", out var n) ? n : p.Parameters.ProbeType.ToString(),
+                Name = p.Parameters.Extra.TryGetValue("__stepName", out var n) ? n : UiText.ProbeName(p.Parameters.ProbeType),
                 Level = UiText.Level(level),
                 LevelBrush = UiText.LevelBrush(level),
-                Transport = p.Transport.ToString(),
-                Protocol = p.Protocol.ToString(),
+                Transport = UiText.Transport(p.Transport),
+                Protocol = UiText.Protocol(p.Protocol),
                 Elapsed = UiText.Elapsed(p.Elapsed),
             });
             foreach (var obs in p.Observations.Take(2))
@@ -211,12 +254,14 @@ public partial class ScenarioPage : UserControl
                 EventTimeline.Items.Add(new TimelineItem
                 {
                     Time = obs.ObservedUtc.LocalDateTime.ToString("HH:mm:ss.fff"),
-                    Text = "[" + p.Parameters.ProbeType + "] " + obs.Text,
+                    Text = "[" + UiText.ProbeName(p.Parameters.ProbeType) + "] " + obs.Text,
                     DotBrush = UiText.LevelBrush(level),
                 });
             }
             no++;
         }
+
+        AiButton.IsEnabled = true;
 
         // KPI 统计卡 + 汇总标题（概念图 01）
         StatCards.Visibility = Visibility.Visible;
@@ -224,8 +269,7 @@ public partial class ScenarioPage : UserControl
         KpiWarn.Text = warn.ToString();
         KpiUnconfirmed.Text = unconfirmed.ToString();
         KpiFail.Text = fail.ToString();
-        ResultTitle.Text += $"　共 {run.Probes.Count} 项检查，{pass} 项通过，{warn} 项警告，"
-            + $"{unconfirmed} 项未确认，{fail} 项失败";
+        ResultTitle.Text += $"　共 {run.Probes.Count} 项检查";
 
         EvidenceBox.AppendText($"任务 ID：{run.Id}\n");
         EvidenceBox.AppendText($"解析地址：{string.Join("、", run.ResolvedAddresses)}\n");
@@ -245,13 +289,20 @@ public partial class ScenarioPage : UserControl
         }
     }
 
+    private void Ai_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lastRun is null) return;
+        AiAnalysisWindow.Open(
+            $"场景诊断 {_lastRun.RequestedTarget}", AiPromptBuilder.BuildRunContext(_lastRun));
+    }
+
     private void Export_Click(object sender, RoutedEventArgs e)
     {
         if (_lastRun is null) return;
         var html = _lastRun.Artifacts.FirstOrDefault(a => a.Format == "html");
         if (html is null || !File.Exists(html.AbsolutePath))
         {
-            MessageBox.Show("报告尚未生成", "NetFlow");
+            MessageBox.Show("报告尚未生成。", "NetFlow");
             return;
         }
         try
@@ -264,7 +315,7 @@ public partial class ScenarioPage : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"打开报告失败：{ex.Message}", "NetFlow");
+            MessageBox.Show($"无法打开报告：{ex.Message}", "NetFlow");
         }
     }
 

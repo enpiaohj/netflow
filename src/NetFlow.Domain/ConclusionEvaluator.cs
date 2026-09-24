@@ -101,7 +101,7 @@ public static class ConclusionEvaluator
             (TransportOutcome.LocalError, _) => new ConclusionVerdict
             {
                 Level = ConclusionLevel.Fail,
-                Rationale = "本机套接字/绑定错误，探针未能发起网络操作。",
+                Rationale = "本机套接字或地址绑定错误，未能发起网络操作。",
                 Limitations = ["属于本机环境问题，非目标侧观察"],
             },
 

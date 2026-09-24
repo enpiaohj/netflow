@@ -75,7 +75,7 @@ public static class FindingFactory
                 .Take(6)
                 .ToList();
             if (facts.Count == 0)
-                facts.Add($"探针 {p.Parameters.ProbeType}：传输 {p.Transport}，协议 {p.Protocol}");
+                facts.Add($"检查项 {p.Parameters.ProbeType}：传输层 {p.Transport}，协议层 {p.Protocol}");
 
             findings.Add(new Finding
             {
@@ -134,7 +134,7 @@ public static class FindingFactory
                 ?
                 [
                     "针对失败/未确认项，在目标端按报告时间窗口同步观察",
-                    "需要时启用定向抓包后重跑该检查项",
+                    "必要时启用定向抓包并重新运行该检查项",
                 ]
                 : ["如需持续观察，可创建监测任务"],
             RuleVersion = ConclusionEvaluator.RuleVersion,

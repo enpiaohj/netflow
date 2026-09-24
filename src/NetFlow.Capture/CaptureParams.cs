@@ -23,6 +23,15 @@ public sealed record CaptureParams
     /// <summary>每包截断长度（字节，0 = 完整包）。</summary>
     public int SnapLengthBytes { get; init; } = 128;
 
+    public const string RecordMode = "record";
+    public const string LiveMode = "live";
+
+    /// <summary>
+    /// 采集模式：record = 记录到 ETL 并转换为 PCAPNG（默认）；
+    /// live = pktmon 实时模式，输出写入 live.log 供界面实时显示，不产生 ETL/PCAPNG。
+    /// </summary>
+    public string Mode { get; init; } = RecordMode;
+
     /// <summary>宿主工作目录（限定写入范围）。</summary>
     public required string WorkingDirectory { get; init; }
 
@@ -67,6 +76,8 @@ public sealed record CaptureParams
             errors.Add("最长采集时长超出允许范围 10–3600 秒");
         if (SnapLengthBytes is < 0 or > 1514)
             errors.Add("截断长度非法");
+        if (Mode is not (RecordMode or LiveMode))
+            errors.Add("采集模式非法（应为 record 或 live）");
         if (string.IsNullOrWhiteSpace(WorkingDirectory) || !Directory.Exists(WorkingDirectory))
             errors.Add("工作目录不存在");
         if (string.IsNullOrWhiteSpace(StopEventName) || StopEventName.Length > 200)
@@ -110,6 +121,10 @@ public sealed record CaptureStatus
     public string? DropPcapngPath { get; init; }
     public string? EtlPath { get; init; }
     public string? Error { get; init; }
+
+    /// <summary>采集模式（record/live）。实时模式没有 PCAPNG 产物属正常情况。</summary>
+    public string Mode { get; init; } = CaptureParams.RecordMode;
+
     public int ExitCode { get; init; }
     public IReadOnlyDictionary<string, string> ExitCodes { get; init; } =
         new Dictionary<string, string>();

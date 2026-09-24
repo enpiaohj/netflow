@@ -29,8 +29,8 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Content="重跑此任务" Margin="0,0,10,0" Click="Rerun_Click"
-                            ToolTip="以相同目标与场景重新执行（原始抓包可能已按留存策略清理）">
+                    <Button Content="重新运行" Margin="0,0,10,0" Click="Rerun_Click"
+                            ToolTip="使用相同的目标和场景重新运行">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
                                 <Style.Triggers>
@@ -41,7 +41,7 @@
                             </Style>
                         </Button.Style>
                     </Button>
-                    <Button Content="打开证据目录" Style="{StaticResource SecondaryButtonStyle}"
+                    <Button Content="打开证据文件夹" Style="{StaticResource SecondaryButtonStyle}"
                             Margin="0,0,10,0" Click="OpenFolder_Click"/>
                     <Button Content="刷新" Style="{StaticResource SecondaryButtonStyle}" Click="Refresh_Click"/>
                 </StackPanel>
@@ -59,7 +59,7 @@
                         <DataGridTextColumn Header="任务 ID" Binding="{Binding Id}" Width="280"/>
                     </DataGrid.Columns>
                 </DataGrid>
-                <TextBlock Text="暂无历史记录，或没有符合搜索条件的记录">
+                <TextBlock Text="暂无符合条件的记录">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
                             <Setter Property="Visibility" Value="Collapsed"/>
