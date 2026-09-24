@@ -6,6 +6,8 @@ using System.Windows.Input;
 using NetFlow.Application;
 using NetFlow.Desktop.Services;
 
+using NetFlow.Domain;
+
 namespace NetFlow.Desktop.Pages;
 
 public partial class HistoryPage : UserControl

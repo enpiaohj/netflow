@@ -4,6 +4,8 @@ using NetFlow.Persistence;
 using NetFlow.Reporting;
 using System.IO;
 
+using NetFlow.Domain;
+
 namespace NetFlow.Desktop.Services;
 
 /// <summary>组合根：应用级服务实例。窗口与页面共享。</summary>

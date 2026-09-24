@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace NetFlow.Application;
+namespace NetFlow.Domain;
 
 /// <summary>
 /// 轻量滚动文件日志（可观测性基线）：

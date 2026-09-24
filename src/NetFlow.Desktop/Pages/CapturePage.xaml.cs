@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using NetFlow.Capture;
 using NetFlow.Desktop.Services;
@@ -17,6 +18,11 @@ public partial class CapturePage : UserControl
     private RunId? _activeRunId;
     private string? _lastPcapng;
     private CancellationTokenSource? _cts;
+    private DispatcherTimer? _elapsedTimer;
+    private DateTimeOffset _startedUtc;
+
+    /// <summary>自动解析的包数上限：超大抓包只解析前 20 万包（内存与列表可控）。</summary>
+    private const int MaxAnalyzedPackets = 200_000;
 
     public CapturePage()
     {
@@ -26,10 +32,26 @@ public partial class CapturePage : UserControl
 
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
+        CaptureHint.Text = "";
         var target = TargetInput.Text.Trim();
         if (!System.Net.IPAddress.TryParse(target, out var ip))
         {
-            MessageBox.Show("过滤目标必须是 IP 地址", "NetFlow");
+            CaptureHint.Text = "过滤目标必须是 IP 地址";
+            TargetInput.Focus();
+            return;
+        }
+
+        // 参数校验（内联，不打断）
+        if (!int.TryParse(DurationInput.Text, out var duration) || duration is < 10 or > 3600)
+        {
+            CaptureHint.Text = "最长时长需为 10–3600 秒";
+            DurationInput.Focus();
+            return;
+        }
+        if (!int.TryParse(SnapInput.Text, out var snap) || snap is < 0 or > 1514)
+        {
+            CaptureHint.Text = "截断长度需为 0–1514 字节（0 = 完整包）";
+            SnapInput.Focus();
             return;
         }
 
@@ -37,21 +59,29 @@ public partial class CapturePage : UserControl
             .ConfigureAwait(true);
         if (!capability.Available)
         {
-            MessageBox.Show($"Pktmon 不可用：{capability.Error}", "NetFlow",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            CaptureHint.Text = $"Pktmon 不可用：{capability.Error}";
             return;
         }
 
         _activeRunId = RunId.New();
         _cts = new CancellationTokenSource();
         StartButton.IsEnabled = false;
-        CaptureHint.Text = $"抓包中…（runId {_activeRunId}；最长 10 分钟，环形缓冲 256 MB）";
+        CaptureHint.Text = "正在启动提权采集宿主…";
 
+        var options = new CaptureStartOptions
+        {
+            MaxDurationSeconds = duration,
+            SnapLengthBytes = snap,
+        };
         var (started, reason) = await AppServices.Instance.CaptureController
-            .StartAsync(_activeRunId.Value, ip, _cts.Token).ConfigureAwait(true);
+            .StartAsync(_activeRunId.Value, ip, options, _cts.Token).ConfigureAwait(true);
         if (started)
         {
             StopButton.IsEnabled = true;
+            _startedUtc = DateTimeOffset.UtcNow;
+            StartElapsedTimer();
+            CaptureHint.Text = $"抓包中…（runId {_activeRunId}，最长 {duration}s，截断 {(snap == 0 ? "完整包" : snap + "B")}）；" +
+                "可切换页面，顶栏可跳回";
         }
         else
         {
@@ -60,19 +90,63 @@ public partial class CapturePage : UserControl
         }
     }
 
+    private void StartElapsedTimer()
+    {
+        _elapsedTimer?.Stop();
+        _elapsedTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _elapsedTimer.Tick += (_, _) =>
+        {
+            var elapsed = (int)(DateTimeOffset.UtcNow - _startedUtc).TotalSeconds;
+            var duration = int.TryParse(DurationInput.Text, out var d) ? d : 600;
+            CaptureHint.Text = $"抓包中… 已运行 {elapsed}s / 最长 {duration}s（runId {_activeRunId}）；" +
+                "可切换页面，顶栏可跳回";
+        };
+        _elapsedTimer.Start();
+    }
+
+    private void StopElapsedTimer()
+    {
+        _elapsedTimer?.Stop();
+        _elapsedTimer = null;
+    }
+
     private async void Stop_Click(object sender, RoutedEventArgs e)
     {
         if (_activeRunId is null) return;
         StopButton.IsEnabled = false;
+        CaptureHint.Text = "正在停止并等待宿主转换结果（最长等待 60 秒）…";
 
-        var (path, note) = await AppServices.Instance.CaptureController
-            .StopAsync(_activeRunId.Value, _cts?.Token ?? CancellationToken.None).ConfigureAwait(true);
-        _lastPcapng = path;
-        CaptureHint.Text = note ?? "已停止";
+        CaptureStopResult result;
+        try
+        {
+            result = await AppServices.Instance.CaptureController
+                .StopAsync(_activeRunId.Value, _cts?.Token ?? CancellationToken.None)
+                .ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // 页面级取消（应用退出等）：保留重试能力
+            StopButton.IsEnabled = true;
+            return;
+        }
+
+        if (result.TimedOut)
+        {
+            // 宿主可能仍在运行：保留停止按钮供重试，不清空 runId。
+            // 停掉已用时计时器，避免它持续覆盖提示文本
+            StopElapsedTimer();
+            CaptureHint.Text = result.Note;
+            StopButton.IsEnabled = true;
+            return;
+        }
+
+        StopElapsedTimer();
+        _lastPcapng = result.PcapngPath;
+        CaptureHint.Text = result.Note;
         StartButton.IsEnabled = true;
 
-        if (path is not null)
-            await LoadPcapngAsync(path).ConfigureAwait(true);
+        if (result.PcapngPath is not null)
+            await LoadPcapngAsync(result.PcapngPath).ConfigureAwait(true);
     }
 
     private async void Import_Click(object sender, RoutedEventArgs e)
@@ -111,7 +185,9 @@ public partial class CapturePage : UserControl
     {
         try
         {
-            var analysis = await Task.Run(() => PcapngAnalyzer.Analyze(path)).ConfigureAwait(true);
+            // 限最大解析包数：超大抓包内存与耗时可控；分析口径在结果中说明
+            var analysis = await Task.Run(
+                () => PcapngAnalyzer.Analyze(path, MaxAnalyzedPackets)).ConfigureAwait(true);
 
             Packets.Clear();
             int no = 1;
@@ -127,7 +203,10 @@ public partial class CapturePage : UserControl
                 });
             }
 
-            PacketTitle.Text = $"数据包列表（{analysis.Packets.Count} 包，显示前 {Packets.Count}）";
+            var truncated = analysis.Packets.Count >= MaxAnalyzedPackets
+                ? $"（已达到解析上限 {MaxAnalyzedPackets} 包，统计基于前 {MaxAnalyzedPackets} 包）"
+                : "";
+            PacketTitle.Text = $"数据包列表（{analysis.Packets.Count} 包{truncated}，显示前 {Packets.Count}）";
             AnalysisBox.Clear();
             AnalysisBox.AppendText($"文件：{path}\n\n");
             foreach (var f in analysis.Findings)

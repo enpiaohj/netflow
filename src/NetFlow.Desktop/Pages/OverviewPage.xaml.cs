@@ -7,6 +7,8 @@ using NetFlow.Application;
 using NetFlow.Desktop.Services;
 using NetFlow.Windows;
 
+using NetFlow.Domain;
+
 namespace NetFlow.Desktop.Pages;
 
 public partial class OverviewPage : UserControl
