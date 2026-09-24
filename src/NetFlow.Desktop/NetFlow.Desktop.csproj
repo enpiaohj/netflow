@@ -14,6 +14,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\NetFlow.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 窗口/任务栏图标（与 exe 图标同一份 ico；母版由 scripts/generate_icon.py 生成） -->
+    <Resource Include="Assets\NetFlow.ico" />
+  </ItemGroup>
 
 </Project>

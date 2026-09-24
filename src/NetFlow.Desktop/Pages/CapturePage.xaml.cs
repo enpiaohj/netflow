@@ -30,13 +30,21 @@ public partial class CapturePage : UserControl
         PacketGrid.ItemsSource = Packets;
     }
 
+    /// <summary>校验/环境类错误以红色显示，与进行中的状态提示（蓝色）区分。</summary>
+    private void ShowCaptureError(string message)
+    {
+        CaptureHint.Foreground = (System.Windows.Media.Brush)FindResource("StatusFail");
+        CaptureHint.Text = message;
+    }
+
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
+        CaptureHint.Foreground = (System.Windows.Media.Brush)FindResource("PrimaryBrush");
         CaptureHint.Text = "";
         var target = TargetInput.Text.Trim();
         if (!System.Net.IPAddress.TryParse(target, out var ip))
         {
-            CaptureHint.Text = "过滤目标必须是 IP 地址";
+            ShowCaptureError("过滤目标必须是 IP 地址");
             TargetInput.Focus();
             return;
         }
@@ -44,13 +52,13 @@ public partial class CapturePage : UserControl
         // 参数校验（内联，不打断）
         if (!int.TryParse(DurationInput.Text, out var duration) || duration is < 10 or > 3600)
         {
-            CaptureHint.Text = "最长时长需为 10–3600 秒";
+            ShowCaptureError("最长时长需为 10–3600 秒");
             DurationInput.Focus();
             return;
         }
         if (!int.TryParse(SnapInput.Text, out var snap) || snap is < 0 or > 1514)
         {
-            CaptureHint.Text = "截断长度需为 0–1514 字节（0 = 完整包）";
+            ShowCaptureError("截断长度需为 0–1514 字节（0 = 完整包）");
             SnapInput.Focus();
             return;
         }
@@ -59,7 +67,7 @@ public partial class CapturePage : UserControl
             .ConfigureAwait(true);
         if (!capability.Available)
         {
-            CaptureHint.Text = $"Pktmon 不可用：{capability.Error}";
+            ShowCaptureError($"Pktmon 不可用：{capability.Error}");
             return;
         }
 

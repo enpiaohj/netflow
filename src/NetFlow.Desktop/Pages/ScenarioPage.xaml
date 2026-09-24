@@ -11,42 +11,44 @@
             <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="70"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="80"/>
-                        <ColumnDefinition Width="180"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="220"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="目标主机" VerticalAlignment="Center"/>
-                    <TextBox Grid.Column="1" x:Name="TargetInput" Style="{StaticResource InputStyle}"
-                             Margin="0,0,10,0" KeyDown="TargetInput_KeyDown"/>
-                    <TextBlock Grid.Column="2" Text="域" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    <TextBox Grid.Column="3" x:Name="DomainInput" Style="{StaticResource InputStyle}"
-                             Margin="0,0,14,0"/>
-                    <CheckBox Grid.Column="4" x:Name="CaptureToggle" Content="同时抓包"
-                              VerticalAlignment="Center" Margin="0,0,14,0"/>
-                    <Button Grid.Column="5" x:Name="RunButton" Content="开始诊断"
-                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Click="Run_Click"/>
-                    <Button Grid.Column="6" x:Name="StopButton" Content="停止"
-                            Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
-                            Click="Stop_Click"/>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="目标主机" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TargetInput" Tag="IP 或域名"
+                                 KeyDown="TargetInput_KeyDown"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                        <TextBlock Text="域（可选）" Style="{StaticResource FieldLabelStyle}"
+                                   ToolTip="用于 SRV / SPN 类查询中的 {domain} 占位符"/>
+                        <TextBox x:Name="DomainInput" Tag="如 corp.example.com"
+                                 ToolTip="用于 SRV / SPN 类查询中的 {domain} 占位符"/>
+                    </StackPanel>
+                    <CheckBox Grid.Column="2" x:Name="CaptureToggle" Content="同时抓包"
+                              VerticalAlignment="Bottom" Margin="0,0,14,8"
+                              ToolTip="诊断期间同步抓包，需要管理员权限（将通过 UAC 按需提升）"/>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button x:Name="RunButton" Content="开始诊断"
+                                Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Click="Run_Click"/>
+                        <Button x:Name="StopButton" Content="停止"
+                                Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
+                                Click="Stop_Click"/>
+                    </StackPanel>
                 </Grid>
-                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                    <TextBlock Text="目标主机（IP 或域名）｜域（用于 SRV/SPN 类查询占位 {domain}）"
-                               FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                    <TextBlock x:Name="ProgressText" Text="" Margin="14,0,0,0"
-                               FontSize="12" Foreground="{StaticResource PrimaryBrush}"/>
-                </StackPanel>
+                <TextBlock x:Name="ProgressText" Text="" Margin="0,8,0,0"
+                           Style="{StaticResource StatusLineStyle}"
+                           Foreground="{StaticResource PrimaryBrush}"/>
             </StackPanel>
         </Border>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250"/>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="230"/>
+                <ColumnDefinition Width="2*" MinWidth="380"/>
+                <ColumnDefinition Width="*" MinWidth="240"/>
             </Grid.ColumnDefinitions>
 
             <!-- 模板列表 -->
@@ -57,7 +59,13 @@
                             Margin="0,8,0,0" Click="SaveTemplate_Click"/>
                     <TextBlock DockPanel.Dock="Top" Text="场景模板" Style="{StaticResource SectionTitleStyle}"/>
                     <ListBox x:Name="TemplateList" BorderThickness="0" Background="Transparent"
-                             Margin="0,6,0,0"/>
+                             Margin="0,6,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap" Padding="2,3"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </DockPanel>
             </Border>
 
@@ -109,6 +117,16 @@
                     <!-- 事件时间线（对齐概念图 01 底部时间线：彩点 + 事件） -->
                     <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource BorderLight}"
                             BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,6,0,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count, ElementName=EventTimeline}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <StackPanel>
                             <TextBlock Text="抓包与测试事件时间线" Style="{StaticResource SectionTitleStyle}"/>
                             <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
@@ -131,7 +149,8 @@
                             </ScrollViewer>
                         </StackPanel>
                     </Border>
-                    <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0">
+                    <Grid Margin="0,6,0,0">
+                    <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding No}" Width="34"/>
                             <DataGridTextColumn Header="检查项" Binding="{Binding Name}" Width="*"/>
@@ -150,6 +169,19 @@
                             <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="76"/>
                         </DataGrid.Columns>
                     </DataGrid>
+                    <TextBlock Text="选择场景模板并填写目标，点击“开始诊断”">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count, ElementName=ResultGrid}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    </Grid>
                 </DockPanel>
             </Border>
 
@@ -160,11 +192,11 @@
                     <Button DockPanel.Dock="Bottom" x:Name="ExportButton" Content="导出报告"
                             Style="{StaticResource PrimaryButtonStyle}" Margin="0,8,0,0"
                             IsEnabled="False" Click="Export_Click"/>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <TextBox x:Name="EvidenceBox" IsReadOnly="True" TextWrapping="Wrap"
-                                 BorderThickness="0" Background="Transparent"
-                                 FontFamily="Consolas" FontSize="12" MinHeight="300"/>
-                    </ScrollViewer>
+                    <TextBox x:Name="EvidenceBox" IsReadOnly="True" TextWrapping="Wrap"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                             BorderThickness="0" Background="Transparent" VerticalContentAlignment="Top"
+                             FontFamily="Consolas" FontSize="12" Margin="0,6,0,0"
+                             Tag="诊断完成后，这里显示每个检查项的观察事实与证据"/>
                 </DockPanel>
             </Border>
         </Grid>

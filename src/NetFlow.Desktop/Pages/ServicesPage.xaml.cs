@@ -18,11 +18,8 @@ public partial class ServicesPage : UserControl
         ServiceGrid.ItemsSource = Services;
         EventGrid.ItemsSource = Events;
         ListenerGrid.ItemsSource = Listeners;
-        Loaded += async (_, _) =>
-        {
-            TargetInput.Text = Environment.MachineName;
-            await LoadListenersAsync().ConfigureAwait(true);
-        };
+        // 目标留空 = 本机（占位提示已说明），不再预填机器名
+        Loaded += async (_, _) => await LoadListenersAsync().ConfigureAwait(true);
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e)

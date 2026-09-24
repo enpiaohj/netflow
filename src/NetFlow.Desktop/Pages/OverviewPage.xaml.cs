@@ -21,8 +21,6 @@ public partial class OverviewPage : UserControl
         RecentGrid.ItemsSource = Recent;
         Loaded += async (_, _) =>
         {
-            if (TargetInput.Text.Length == 0)
-                TargetInput.Text = "输入 IP、域名或服务器名称";
             try
             {
                 await LoadAdaptersAsync().ConfigureAwait(true);
@@ -32,15 +30,6 @@ public partial class OverviewPage : UserControl
             {
                 AppLog.Warn($"总览页数据加载失败：{ex.Message}");
             }
-        };
-
-        TargetInput.GotFocus += (_, _) =>
-        {
-            if (TargetInput.Text == PlaceholderText) TargetInput.Clear();
-        };
-        TargetInput.LostFocus += (_, _) =>
-        {
-            if (TargetInput.Text.Length == 0) TargetInput.Text = PlaceholderText;
         };
     }
 
@@ -55,6 +44,7 @@ public partial class OverviewPage : UserControl
                 Text = $"{a.Name}｜{string.Join(", ", a.Ipv4Addresses)}｜网关 {a.Gateways.FirstOrDefault() ?? "—"}",
                 Margin = new Thickness(0, 3, 0, 3),
                 FontSize = 13,
+                TextWrapping = TextWrapping.Wrap,
             });
         }
         AdapterPanel.Children.Add(new TextBlock
@@ -62,8 +52,8 @@ public partial class OverviewPage : UserControl
             Text = NetworkProfileCollector.GetProxyStatus(),
             Margin = new Thickness(0, 6, 0, 0),
             FontSize = 12,
-            Foreground = new System.Windows.Media.SolidColorBrush(
-                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#64748B")),
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = (System.Windows.Media.Brush)FindResource("TextSecondary"),
         });
     }
 
@@ -85,8 +75,6 @@ public partial class OverviewPage : UserControl
         }
     }
 
-    private const string PlaceholderText = "输入 IP、域名或服务器名称";
-
     private void TargetInput_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
@@ -99,7 +87,7 @@ public partial class OverviewPage : UserControl
     private void QuickTest_Click(object sender, RoutedEventArgs e)
     {
         var target = TargetInput.Text.Trim();
-        if (target.Length == 0 || target == PlaceholderText)
+        if (target.Length == 0)
         {
             TargetInput.Focus();
             return;
@@ -111,10 +99,14 @@ public partial class OverviewPage : UserControl
     private void Scenario_Click(object sender, RoutedEventArgs e) =>
         NavigationState.Raise("scenario");
 
+    /// <summary>快速入口：Tag 形如 "页面" 或 "页面:子类型"（如 quicktest:dns 直接切到 DNS 测试）。</summary>
     private void QuickNav_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: string } b)
-            NavigationState.Raise(b.Tag.ToString()!);
+        if (sender is not Button { Tag: string tag }) return;
+        var parts = tag.Split(':', 2);
+        if (parts.Length == 2 && parts[0] == "quicktest")
+            NavigationState.PendingQuickTestTab = parts[1];
+        NavigationState.Raise(parts[0]);
     }
 }
 
@@ -130,6 +122,9 @@ public static class NavigationState
 {
     public static event Action<string>? RequestNavigation;
     public static string? PendingQuickTestTarget { get; set; }
+
+    /// <summary>快速测试页待选中的测试类型（tcpudp / dns / http / ping / ntp）。</summary>
+    public static string? PendingQuickTestTab { get; set; }
 
     /// <summary>历史页"重跑"请求（场景模板 ID + 目标）。</summary>
     public static (string ScenarioId, string Target)? PendingScenarioRun { get; set; }

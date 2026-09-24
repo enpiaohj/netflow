@@ -1,7 +1,7 @@
 <UserControl x:Class="NetFlow.Desktop.Pages.LocalNetworkPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <TabControl Background="Transparent">
+    <TabControl>
         <TabItem Header="网络适配器">
             <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
                 <DockPanel>
@@ -9,13 +9,13 @@
                                Foreground="{StaticResource TextSecondary}"/>
                     <DataGrid x:Name="AdapterGrid" Style="{StaticResource DataGridStyle}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="150"/>
+                            <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="220"/>
                             <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="90"/>
-                            <DataGridTextColumn Header="IPv4" Binding="{Binding Ipv4}" Width="150"/>
-                            <DataGridTextColumn Header="前缀" Binding="{Binding Prefixes}" Width="*"/>
+                            <DataGridTextColumn Header="IPv4" Binding="{Binding Ipv4}" Width="130"/>
+                            <DataGridTextColumn Header="前缀" Binding="{Binding Prefixes}" Width="150"/>
                             <DataGridTextColumn Header="网关" Binding="{Binding Gateways}" Width="120"/>
-                            <DataGridTextColumn Header="DNS" Binding="{Binding Dns}" Width="*"/>
-                            <DataGridTextColumn Header="MAC" Binding="{Binding Mac}" Width="170"/>
+                            <DataGridTextColumn Header="DNS" Binding="{Binding Dns}" Width="*" MinWidth="160"/>
+                            <DataGridTextColumn Header="MAC" Binding="{Binding Mac}" Width="150"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
@@ -24,16 +24,20 @@
         <TabItem Header="路由表">
             <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
                 <DockPanel>
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="目标地址" VerticalAlignment="Center"/>
-                        <TextBox x:Name="RouteTargetInput" Text="192.168.10.11" Width="160"
-                                 Style="{StaticResource InputStyle}" Margin="6,0,10,0"/>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock Text="目标地址（IP）" Style="{StaticResource FieldLabelStyle}"/>
+                            <TextBox x:Name="RouteTargetInput" Width="220"
+                                     Tag="如 192.168.1.10"/>
+                        </StackPanel>
                         <Button Content="查询路由" Style="{StaticResource SecondaryButtonStyle}"
-                                Click="Route_Click"/>
+                                VerticalAlignment="Bottom" Click="Route_Click"/>
                     </StackPanel>
                     <TextBox x:Name="RouteResult" IsReadOnly="True" FontFamily="Consolas" FontSize="12"
                              BorderThickness="0" Background="Transparent" TextWrapping="Wrap"
-                             VerticalContentAlignment="Top" MinHeight="120"/>
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                             VerticalContentAlignment="Top"
+                             Tag="输入目标 IP，查看本机到该地址的真实源地址、下一跳与出口接口"/>
                 </DockPanel>
             </Border>
         </TabItem>
@@ -58,7 +62,7 @@
                     <TextBlock DockPanel.Dock="Top"
                                Text="规则展示是配置证据，不构成流量真实被放行的证明。"
                                FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,6"/>
-                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
                         <Button Content="加载规则（可能耗时）" Style="{StaticResource SecondaryButtonStyle}"
                                 Click="Firewall_Click"/>
                     </StackPanel>

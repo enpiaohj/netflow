@@ -11,56 +11,58 @@
             <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="70"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="76"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="90"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="过滤目标" VerticalAlignment="Center"/>
-                    <TextBox Grid.Column="1" x:Name="TargetInput" Style="{StaticResource InputStyle}"
-                             Margin="0,0,12,0" Text="192.168.10.11"/>
-                    <TextBlock Grid.Column="2" Text="最长时长(秒)" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox Grid.Column="3" x:Name="DurationInput" Text="120" Style="{StaticResource InputStyle}"
-                             Margin="0,0,12,0"/>
-                    <TextBlock Grid.Column="4" Text="截断(字节)" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox Grid.Column="5" x:Name="SnapInput" Text="128" Style="{StaticResource InputStyle}"
-                             Margin="0,0,12,0"/>
-                    <Button Grid.Column="6" x:Name="StartButton" Content="开始抓包"
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="过滤目标（IP）" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TargetInput" Tag="仅抓取与该 IP 相关的流量，如 192.168.1.10"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Width="120" Margin="0,0,12,0">
+                        <TextBlock Text="最长时长（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="DurationInput" Text="120"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Width="120">
+                        <TextBlock Text="截断（字节）" Style="{StaticResource FieldLabelStyle}"
+                                   ToolTip="每个包只保留前 N 字节；0 = 完整包"/>
+                        <TextBox x:Name="SnapInput" Text="128"
+                                 ToolTip="每个包只保留前 N 字节；0 = 完整包"/>
+                    </StackPanel>
+                </Grid>
+                <WrapPanel Margin="0,12,0,0">
+                    <Button x:Name="StartButton" Content="开始抓包"
                             Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
                             Click="Start_Click"/>
-                    <Button Grid.Column="7" x:Name="StopButton" Content="停止"
-                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
+                    <Button x:Name="StopButton" Content="停止"
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,20,0"
                             IsEnabled="False" Click="Stop_Click"/>
-                    <Button Grid.Column="8" Content="导入 PCAPNG"
+                    <Button Content="导入 PCAPNG"
                             Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
                             Click="Import_Click"/>
-                    <Button Grid.Column="9" x:Name="TsharkButton" Content="TShark 深度解析"
+                    <Button x:Name="TsharkButton" Content="TShark 深度解析"
                             Style="{StaticResource SecondaryButtonStyle}"
                             Click="Tshark_Click" ToolTip="需要已安装 Wireshark/TShark（可选组件）"/>
-                </Grid>
-                <TextBlock x:Name="CaptureHint" Text="抓包经独立提权宿主执行（Pktmon，过滤单个 IP）；到达最长时长自动结束。停止后需等待宿主写出转换结果。"
-                           FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,6,0,0"/>
+                </WrapPanel>
+                <TextBlock Text="抓包经独立提权宿主执行（Pktmon，过滤单个 IP）；到达最长时长自动结束。停止后需等待宿主写出转换结果。"
+                           Style="{StaticResource HintTextStyle}" Margin="0,10,0,0"/>
+                <TextBlock x:Name="CaptureHint" Text="" Style="{StaticResource StatusLineStyle}"
+                           Foreground="{StaticResource PrimaryBrush}" Margin="0,4,0,0"/>
             </StackPanel>
         </Border>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*" MinWidth="420"/>
+                <ColumnDefinition Width="*" MinWidth="260"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" x:Name="PacketTitle" Text="数据包列表"
                                Style="{StaticResource SectionTitleStyle}"/>
-                    <DataGrid x:Name="PacketGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0">
+                    <Grid Margin="0,6,0,0">
+                    <DataGrid x:Name="PacketGrid" Style="{StaticResource DataGridStyle}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding No}" Width="52"/>
                             <DataGridTextColumn Header="来源" Binding="{Binding Source}" Width="120"/>
@@ -69,17 +71,30 @@
                             <DataGridTextColumn Header="信息" Binding="{Binding Info}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
+                    <TextBlock Text="尚无数据包。开始抓包，或导入已有的 PCAPNG 文件">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count, ElementName=PacketGrid}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    </Grid>
                 </DockPanel>
             </Border>
 
             <Border Grid.Column="1" Style="{StaticResource CardStyle}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="异常分析" Style="{StaticResource SectionTitleStyle}"/>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <TextBox x:Name="AnalysisBox" IsReadOnly="True" TextWrapping="Wrap"
-                                 BorderThickness="0" Background="Transparent"
-                                 FontFamily="Consolas" FontSize="12" MinHeight="300"/>
-                    </ScrollViewer>
+                    <TextBox x:Name="AnalysisBox" IsReadOnly="True" TextWrapping="Wrap"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                             BorderThickness="0" Background="Transparent" VerticalContentAlignment="Top"
+                             FontFamily="Consolas" FontSize="12" Margin="0,6,0,0"
+                             Tag="抓包结束或导入文件后，这里显示重传、复位、握手失败等异常分析"/>
                 </DockPanel>
             </Border>
         </Grid>

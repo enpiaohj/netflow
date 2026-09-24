@@ -25,19 +25,54 @@ public partial class QuickTestPage : UserControl
     {
         InitializeComponent();
         ResultGrid.ItemsSource = Results;
+        UpdateTypeUi();
         Loaded += (_, _) =>
         {
+            if (NavigationState.PendingQuickTestTab is { } tab)
+            {
+                NavigationState.PendingQuickTestTab = null;
+                var radio = TypeRadios.FirstOrDefault(rb => rb.Tag?.ToString() == tab);
+                if (radio is not null) radio.IsChecked = true;
+            }
             if (NavigationState.PendingQuickTestTarget is { } t)
             {
                 TargetInput.Text = t;
                 NavigationState.PendingQuickTestTarget = null;
             }
+            TargetInput.Focus();
         };
     }
 
+    private RadioButton[] TypeRadios => [TabTcpUdp, TabDns, TabHttp, TabPing, TabNtp];
+
     private string CurrentTab =>
-        new[] { TabTcpUdp, TabDns, TabHttp, TabPing, TabNtp }
-            .FirstOrDefault(rb => rb.IsChecked == true)?.Tag?.ToString() ?? "tcpudp";
+        TypeRadios.FirstOrDefault(rb => rb.IsChecked == true)?.Tag?.ToString() ?? "tcpudp";
+
+    private void Type_Checked(object sender, RoutedEventArgs e) => UpdateTypeUi();
+
+    /// <summary>按测试类型显隐参数并更新说明：端口仅 TCP/UDP 使用，其余类型不展示无关输入。</summary>
+    private void UpdateTypeUi()
+    {
+        // Checked 事件在 InitializeComponent 期间即会触发，此时后续控件尚未创建
+        if (PortPanel is null || TypeHint is null) return;
+
+        var tab = CurrentTab;
+        PortPanel.Visibility = tab == "tcpudp" ? Visibility.Visible : Visibility.Collapsed;
+        TypeHint.Text = tab switch
+        {
+            "dns" => "使用本机系统 DNS 服务器查询 A / AAAA 记录。域名不存在（NXDOMAIN）表示 DNS 有响应但查询业务失败。",
+            "http" => "未写协议时按 HTTPS 访问并检查 TLS 证书；也可直接填写完整 URL。",
+            "ping" => "发送 4 次 ICMP 并追踪路径（最多 10 跳）。ICMP 无回应不等同于主机不可达。",
+            "ntp" => "向目标发起 NTP 时间请求。",
+            _ => "同时测试 TCP 连接与 UDP 探测。TCP 连通仅代表传输层成功；UDP 无响应为“未确认”，耗时显示“—”而非 0ms。",
+        };
+    }
+
+    private void SetError(string? message)
+    {
+        InlineError.Text = message ?? "";
+        InlineError.Visibility = string.IsNullOrEmpty(message) ? Visibility.Collapsed : Visibility.Visible;
+    }
 
     private void TargetInput_KeyDown(object sender, KeyEventArgs e)
     {
@@ -50,46 +85,58 @@ public partial class QuickTestPage : UserControl
 
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
-        InlineError.Text = "";
+        SetError(null);
+        var tab = CurrentTab;
         var target = TargetInput.Text.Trim();
         if (target.Length == 0)
         {
-            InlineError.Text = "请输入目标地址";
+            SetError("请输入目标地址");
             TargetInput.Focus();
             return;
         }
 
-        if (!int.TryParse(PortInput.Text, out var port) || port is < 1 or > 65535)
+        // 端口仅 TCP/UDP 使用；其他类型端口为“不适用”（null），不做校验
+        int? port = null;
+        if (tab == "tcpudp")
         {
-            InlineError.Text = "端口需为 1–65535";
-            PortInput.Focus();
-            return;
+            if (!int.TryParse(PortInput.Text, out var p) || p is < 1 or > 65535)
+            {
+                SetError("端口需为 1–65535");
+                PortInput.Focus();
+                return;
+            }
+            port = p;
         }
 
         if (!double.TryParse(TimeoutInput.Text, out var timeoutSec) || timeoutSec is <= 0 or > 60)
         {
-            InlineError.Text = "超时需为 0–60 秒";
+            SetError("超时需大于 0 且不超过 60 秒");
             TimeoutInput.Focus();
             return;
         }
         var timeout = TimeSpan.FromSeconds(timeoutSec);
 
-        // 名称解析失败是常见输入问题：内联提示而非弹窗打断
-        IPAddress ip;
-        if (IPAddress.TryParse(target, out var direct))
+        // 仅需要目标 IP 的类型才预先解析。DNS/HTTP 类型由探针自行解析：
+        // 若在此预解析，域名不存在这类正是要诊断的情形会被提前拦下，URL 形式的目标也会解析失败。
+        IPAddress ip = IPAddress.None;
+        if (tab is "tcpudp" or "ping" or "ntp")
         {
-            ip = direct;
-        }
-        else
-        {
-            try
+            if (IPAddress.TryParse(target, out var direct))
             {
-                ip = (await Dns.GetHostAddressesAsync(target).ConfigureAwait(true)).First();
+                ip = direct;
             }
-            catch (Exception ex)
+            else
             {
-                InlineError.Text = $"名称解析失败：{ex.Message}";
-                return;
+                // 名称解析失败是常见输入问题：内联提示而非弹窗打断
+                try
+                {
+                    ip = (await Dns.GetHostAddressesAsync(target).ConfigureAwait(true)).First();
+                }
+                catch (Exception ex)
+                {
+                    SetError($"名称解析失败：{ex.Message}");
+                    return;
+                }
             }
         }
 
@@ -117,16 +164,20 @@ public partial class QuickTestPage : UserControl
             CancellationToken = _cts.Token,
         };
 
+        // 每个探针使用与自身类型一致的请求参数，结果表“探针”列才不会全部显示为 TcpConnect
+        ProbeRequest For(ProbeType type) =>
+            request with { Parameters = request.Parameters with { ProbeType = type } };
+
         try
         {
-            switch (CurrentTab)
+            switch (tab)
             {
                 case "tcpudp":
                     ResultTitle.Text = $"测试结果：TCP {port} / UDP {port}";
-                    AddRun(await new TcpConnectProbe().ExecuteAsync(ip, port, request).ConfigureAwait(true));
+                    AddRun(await new TcpConnectProbe().ExecuteAsync(ip, port!.Value, For(ProbeType.TcpConnect)).ConfigureAwait(true));
                     AddRun(await new UdpProbe().ExecuteAsync(
-                        ip, port, new UdpPayload { Text = "NetFlow probe\n", EncodingName = "utf-8" },
-                        request).ConfigureAwait(true));
+                        ip, port!.Value, new UdpPayload { Text = "NetFlow probe\n", EncodingName = "utf-8" },
+                        For(ProbeType.UdpDatagram)).ConfigureAwait(true));
                     break;
                 case "dns":
                 {
@@ -134,12 +185,12 @@ public partial class QuickTestPage : UserControl
                     var dnsServer = FirstSystemDns();
                     if (dnsServer is null)
                     {
-                        InlineError.Text = "未找到系统 DNS 服务器";
+                        SetError("未找到系统 DNS 服务器");
                         return;
                     }
                     foreach (var type in new[] { DnsRecordType.A, DnsRecordType.AAAA })
                     {
-                        AddRun(await new DnsProbe().ExecuteAsync(dnsServer, target, type, request)
+                        AddRun(await new DnsProbe().ExecuteAsync(dnsServer, target, type, For(ProbeType.Dns))
                             .ConfigureAwait(true));
                     }
                     break;
@@ -151,24 +202,24 @@ public partial class QuickTestPage : UserControl
                         ? new Uri(target)
                         : new Uri($"https://{target}/");
 
-                    AddRun(await new HttpProbe().ExecuteAsync(uri, request).ConfigureAwait(true));
+                    AddRun(await new HttpProbe().ExecuteAsync(uri, For(ProbeType.Http)).ConfigureAwait(true));
 
                     if (uri.Scheme == "https")
                     {
                         var tlsIp = (await Dns.GetHostAddressesAsync(uri.Host).ConfigureAwait(true)).First();
                         AddRun(await new TlsProbe().ExecuteAsync(
-                            tlsIp, uri.Port == 0 ? 443 : uri.Port, uri.Host, request).ConfigureAwait(true));
+                            tlsIp, uri.Port == 0 ? 443 : uri.Port, uri.Host, For(ProbeType.Tls)).ConfigureAwait(true));
                     }
                     break;
                 }
                 case "ping":
                     ResultTitle.Text = $"测试结果：ICMP + 路径 {ip}";
-                    AddRun(await new IcmpProbe().ExecuteAsync(ip, 4, request).ConfigureAwait(true));
-                    AddRun(await new IcmpProbe().TraceRouteAsync(ip, 10, 1, request).ConfigureAwait(true));
+                    AddRun(await new IcmpProbe().ExecuteAsync(ip, 4, For(ProbeType.IcmpPing)).ConfigureAwait(true));
+                    AddRun(await new IcmpProbe().TraceRouteAsync(ip, 10, 1, For(ProbeType.TraceRoute)).ConfigureAwait(true));
                     break;
                 case "ntp":
                     ResultTitle.Text = $"测试结果：NTP {ip}";
-                    AddRun(await new NtpProbe().ExecuteAsync(ip, request).ConfigureAwait(true));
+                    AddRun(await new NtpProbe().ExecuteAsync(ip, For(ProbeType.Ntp)).ConfigureAwait(true));
                     break;
             }
         }
@@ -179,7 +230,7 @@ public partial class QuickTestPage : UserControl
         catch (Exception ex)
         {
             AppLog.Error("快速测试执行异常", ex);
-            InlineError.Text = $"执行异常：{ex.Message}";
+            SetError($"执行异常：{ex.Message}");
         }
         finally
         {

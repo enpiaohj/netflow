@@ -17,7 +17,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="TargetInput" Style="{StaticResource InputStyle}"
-                         Margin="0,0,10,0"
+                         Margin="0,0,10,0" Tag="输入 IP、域名或服务器名称，回车即开始快速测试"
                          KeyDown="TargetInput_KeyDown"/>
                 <Button Grid.Column="1" x:Name="QuickTestButton" Content="快速测试"
                         Style="{StaticResource PrimaryButtonStyle}"
@@ -46,11 +46,15 @@
             <Border Grid.Column="1" Style="{StaticResource CardStyle}">
                 <StackPanel>
                     <TextBlock Text="快速功能入口" Style="{StaticResource SectionTitleStyle}"/>
-                    <UniformGrid Columns="4" Margin="0,8,0,0">
+                    <UniformGrid Columns="3" Margin="0,8,0,0">
                         <Button Content="TCP/UDP 端口" Style="{StaticResource SecondaryButtonStyle}"
-                                Margin="0,0,8,0" Click="QuickNav_Click" Tag="quicktest"/>
+                                Margin="0,0,8,8" Click="QuickNav_Click" Tag="quicktest:tcpudp"/>
                         <Button Content="DNS 解析" Style="{StaticResource SecondaryButtonStyle}"
-                                Margin="0,0,8,0" Click="QuickNav_Click" Tag="quicktest"/>
+                                Margin="0,0,8,8" Click="QuickNav_Click" Tag="quicktest:dns"/>
+                        <Button Content="HTTP/TLS" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,0,8" Click="QuickNav_Click" Tag="quicktest:http"/>
+                        <Button Content="Ping/路径" Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,8,0" Click="QuickNav_Click" Tag="quicktest:ping"/>
                         <Button Content="抓包分析" Style="{StaticResource SecondaryButtonStyle}"
                                 Margin="0,0,8,0" Click="QuickNav_Click" Tag="capture"/>
                         <Button Content="服务检查" Style="{StaticResource SecondaryButtonStyle}"
@@ -64,14 +68,27 @@
         <Border Grid.Row="2" Style="{StaticResource CardStyle}">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="最近诊断" Style="{StaticResource SectionTitleStyle}"/>
-                <DataGrid x:Name="RecentGrid" Style="{StaticResource DataGridStyle}"
-                          Margin="0,6,0,0">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="时间" Binding="{Binding StartLocal}" Width="150"/>
-                        <DataGridTextColumn Header="目标" Binding="{Binding Target}" Width="*"/>
-                        <DataGridTextColumn Header="场景" Binding="{Binding ScenarioName}" Width="200"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid Margin="0,6,0,0">
+                    <DataGrid x:Name="RecentGrid" Style="{StaticResource DataGridStyle}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="时间" Binding="{Binding StartLocal}" Width="150"/>
+                            <DataGridTextColumn Header="目标" Binding="{Binding Target}" Width="*"/>
+                            <DataGridTextColumn Header="场景" Binding="{Binding ScenarioName}" Width="200"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock Text="暂无诊断记录。执行场景诊断后，最近的任务会显示在这里">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count, ElementName=RecentGrid}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
             </DockPanel>
         </Border>
     </Grid>

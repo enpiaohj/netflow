@@ -58,7 +58,8 @@ public partial class LocalNetworkPage : UserControl
     {
         if (!IPAddress.TryParse(RouteTargetInput.Text.Trim(), out var target))
         {
-            MessageBox.Show("目标地址需为 IP", "NetFlow");
+            RouteResult.Text = "目标地址需为有效的 IP 地址";
+            RouteTargetInput.Focus();
             return;
         }
         RouteResult.Text = "查询中…";

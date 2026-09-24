@@ -8,30 +8,70 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal">
-                <TextBox x:Name="SearchInput" Style="{StaticResource InputStyle}" Width="320"
-                         Margin="0,0,10,0" KeyUp="Search_KeyUp"/>
-                <Button Content="刷新" Style="{StaticResource PrimaryButtonStyle}"
-                        Margin="0,0,10,0" Click="Refresh_Click"/>
-                <Button Content="打开报告" Style="{StaticResource SecondaryButtonStyle}"
-                        Margin="0,0,10,0" Click="OpenReport_Click"/>
-                <Button Content="重跑此任务" Style="{StaticResource SecondaryButtonStyle}"
-                        Margin="0,0,10,0" Click="Rerun_Click"
-                        ToolTip="以相同目标与场景重新执行（原始抓包可能已按留存策略清理）"/>
-                <Button Content="打开证据目录" Style="{StaticResource SecondaryButtonStyle}"
-                        Click="OpenFolder_Click"/>
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="SearchInput" MaxWidth="420" HorizontalAlignment="Left"
+                         Width="420" Margin="0,0,12,0" KeyUp="Search_KeyUp"
+                         Tag="搜索目标、场景或任务 ID"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <!-- 依赖选中记录的操作：未选中时禁用，不再点击后弹窗提示 -->
+                    <Button Content="打开报告" Margin="0,0,10,0" Click="OpenReport_Click">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedItem, ElementName=HistoryGrid}" Value="{x:Null}">
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="重跑此任务" Margin="0,0,10,0" Click="Rerun_Click"
+                            ToolTip="以相同目标与场景重新执行（原始抓包可能已按留存策略清理）">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedItem, ElementName=HistoryGrid}" Value="{x:Null}">
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="打开证据目录" Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,10,0" Click="OpenFolder_Click"/>
+                    <Button Content="刷新" Style="{StaticResource SecondaryButtonStyle}" Click="Refresh_Click"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <Border Grid.Row="1" Style="{StaticResource CardStyle}">
-            <DataGrid x:Name="HistoryGrid" Style="{StaticResource DataGridStyle}">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="时间" Binding="{Binding StartLocal}" Width="160"/>
-                    <DataGridTextColumn Header="目标" Binding="{Binding Target}" Width="*"/>
-                    <DataGridTextColumn Header="场景" Binding="{Binding ScenarioName}" Width="200"/>
-                    <DataGridTextColumn Header="任务 ID" Binding="{Binding Id}" Width="280"/>
-                </DataGrid.Columns>
-            </DataGrid>
+            <Grid>
+                <DataGrid x:Name="HistoryGrid" Style="{StaticResource DataGridStyle}"
+                          MouseDoubleClick="HistoryGrid_DoubleClick">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="时间" Binding="{Binding StartLocal}" Width="160"/>
+                        <DataGridTextColumn Header="目标" Binding="{Binding Target}" Width="*"/>
+                        <DataGridTextColumn Header="场景" Binding="{Binding ScenarioName}" Width="200"/>
+                        <DataGridTextColumn Header="任务 ID" Binding="{Binding Id}" Width="280"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock Text="暂无历史记录，或没有符合搜索条件的记录">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Items.Count, ElementName=HistoryGrid}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

@@ -6,36 +6,36 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="110"/>
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
             <StackPanel>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="90"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="90"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="并发数" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox Grid.Column="1" x:Name="ConcurrencyInput" Text="8"
-                             Style="{StaticResource InputStyle}" Margin="0,0,14,0"/>
-                    <TextBlock Grid.Column="2" Text="超时(秒)" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox Grid.Column="3" x:Name="TimeoutInput" Text="3"
-                             Style="{StaticResource InputStyle}" Margin="0,0,14,0"/>
-                    <TextBlock Grid.Column="4" Text="目标列表（每行 host:port）" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <Button Grid.Column="6" x:Name="RunButton" Content="运行任务"
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="并发数" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="ConcurrencyInput" Text="8"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="超时（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TimeoutInput" Text="3"/>
+                    </StackPanel>
+                    <Button Grid.Column="3" x:Name="RunButton" Content="运行任务" VerticalAlignment="Bottom"
                             Style="{StaticResource PrimaryButtonStyle}" Click="Run_Click"/>
                 </Grid>
-                <TextBox x:Name="TargetsInput" Style="{StaticResource InputStyle}" Margin="0,8,0,0"
-                         AcceptsReturn="True" Height="70" FontFamily="Consolas" FontSize="12"
-                         Text="192.168.10.11:53&#x0a;192.168.10.11:88&#x0a;192.168.10.11:389&#x0a;192.168.10.11:445&#x0a;192.168.10.15:445&#x0a;192.168.10.15:1433"/>
+                <TextBlock Text="目标列表（每行一个 host:port）" Style="{StaticResource FieldLabelStyle}"
+                           Margin="0,12,0,4"/>
+                <TextBox x:Name="TargetsInput" AcceptsReturn="True" Height="84"
+                         VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                         FontFamily="Consolas" FontSize="12"
+                         Tag="例如：&#x0a;192.168.1.10:443&#x0a;example.com:53"/>
                 <TextBlock Text="局部失败不终止整批；完成后可只重跑失败项。"
-                           FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,4,0,0"/>
+                           Style="{StaticResource HintTextStyle}" Margin="0,6,0,0"/>
             </StackPanel>
         </Border>
 
@@ -43,7 +43,8 @@
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" x:Name="SummaryText" Text="目标检测矩阵"
                            Style="{StaticResource SectionTitleStyle}"/>
-                <DataGrid x:Name="BatchGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0">
+                <Grid Margin="0,6,0,0">
+                <DataGrid x:Name="BatchGrid" Style="{StaticResource DataGridStyle}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="目标" Binding="{Binding Target}" Width="220"/>
                         <DataGridTemplateColumn Header="结论" Width="92">
@@ -61,31 +62,53 @@
                         <DataGridTextColumn Header="说明" Binding="{Binding Detail}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
+                <TextBlock Text="填写目标列表后点击“运行任务”，逐目标的检测结果显示在这里">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Items.Count, ElementName=BatchGrid}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                </Grid>
             </DockPanel>
         </Border>
 
         <!-- 持续监测（设计文档 4.8：低频定时探针，采样缺口不计入目标故障） -->
-        <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                      Height="6" Background="{StaticResource BorderLight}"/>
-        <Border Grid.Row="3" Style="{StaticResource CardStyle}" Margin="0,6,0,0">
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Margin="0,12,0,0">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="持续监测" Style="{StaticResource SectionTitleStyle}"/>
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,4,0,8">
-                    <TextBlock Text="目标 host:port" VerticalAlignment="Center"/>
-                    <TextBox x:Name="MonitorTargetInput" Text="192.168.10.11:445" Width="170"
-                             Style="{StaticResource InputStyle}" Margin="6,0,10,0"/>
-                    <TextBlock Text="间隔(秒)" VerticalAlignment="Center"/>
-                    <TextBox x:Name="MonitorIntervalInput" Text="60" Width="60"
-                             Style="{StaticResource InputStyle}" Margin="6,0,10,0"/>
-                    <Button x:Name="MonitorStartButton" Content="启动监测"
-                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
-                            Click="MonitorStart_Click"/>
-                    <Button x:Name="MonitorStopButton" Content="停止"
-                            Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
-                            Click="MonitorStop_Click"/>
-                    <TextBlock x:Name="MonitorSummary" VerticalAlignment="Center"
-                               Foreground="{StaticResource TextSecondary}" Margin="10,0,0,0"/>
-                </StackPanel>
+                <Grid DockPanel.Dock="Top" Margin="0,4,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="目标（host:port）" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="MonitorTargetInput" Tag="如 192.168.1.10:443"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="间隔（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="MonitorIntervalInput" Text="60"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button x:Name="MonitorStartButton" Content="启动监测"
+                                Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
+                                Click="MonitorStart_Click"/>
+                        <Button x:Name="MonitorStopButton" Content="停止"
+                                Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
+                                Click="MonitorStop_Click"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="3" x:Name="MonitorSummary" VerticalAlignment="Bottom"
+                               Foreground="{StaticResource TextSecondary}" Margin="14,0,0,8"
+                               TextWrapping="Wrap"/>
+                </Grid>
                 <ScrollViewer VerticalScrollBarVisibility="Disabled"
                               HorizontalScrollBarVisibility="Auto">
                     <ItemsControl x:Name="SampleStrip" Height="42">

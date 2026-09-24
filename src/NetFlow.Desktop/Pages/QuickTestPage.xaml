@@ -4,92 +4,126 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- 目标与选项 -->
+        <!-- 测试类型 → 目标与参数（先选类型，再填参数；参数随类型显隐） -->
         <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
             <StackPanel>
-                <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="TabTcpUdp" Content="TCP/UDP 端口" IsChecked="True" Tag="tcpudp"
+                                 GroupName="quicktype" Style="{StaticResource SegmentButtonStyle}"
+                                 Checked="Type_Checked"/>
+                    <RadioButton x:Name="TabDns" Content="DNS 解析" Tag="dns"
+                                 GroupName="quicktype" Style="{StaticResource SegmentButtonStyle}"
+                                 Checked="Type_Checked"/>
+                    <RadioButton x:Name="TabHttp" Content="HTTP/TLS" Tag="http"
+                                 GroupName="quicktype" Style="{StaticResource SegmentButtonStyle}"
+                                 Checked="Type_Checked"/>
+                    <RadioButton x:Name="TabPing" Content="Ping/路径" Tag="ping"
+                                 GroupName="quicktype" Style="{StaticResource SegmentButtonStyle}"
+                                 Checked="Type_Checked"/>
+                    <RadioButton x:Name="TabNtp" Content="NTP" Tag="ntp"
+                                 GroupName="quicktype" Style="{StaticResource SegmentButtonStyle}"
+                                 Checked="Type_Checked"/>
+                </StackPanel>
+
+                <Grid Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="60"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="110"/>
-                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="目标地址" VerticalAlignment="Center"/>
-                    <TextBox Grid.Column="1" x:Name="TargetInput" Style="{StaticResource InputStyle}"
-                             Margin="0,0,10,0" KeyDown="TargetInput_KeyDown"/>
-                    <ComboBox Grid.Column="2" x:Name="PortInput" IsEditable="True" Margin="0,0,10,0">
-                        <ComboBoxItem IsSelected="True">445</ComboBoxItem>
-                        <ComboBoxItem>53</ComboBoxItem>
-                        <ComboBoxItem>88</ComboBoxItem>
-                        <ComboBoxItem>389</ComboBoxItem>
-                        <ComboBoxItem>443</ComboBoxItem>
-                        <ComboBoxItem>1433</ComboBoxItem>
-                    </ComboBox>
-                    <TextBox Grid.Column="3" x:Name="TimeoutInput" Text="3" Margin="0,0,10,0"/>
-                    <Button Grid.Column="4" x:Name="StartButton" Content="开始测试"
-                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
-                            Click="Start_Click"/>
-                    <Button Grid.Column="5" x:Name="StopButton" Content="停止"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            IsEnabled="False" Click="Stop_Click"/>
-                </Grid>
-                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                    <TextBlock Text="目标地址｜端口｜超时（秒）。无响应显示“—”，不显示伪造 0ms。"
-                               FontSize="11" Foreground="{StaticResource TextSecondary}"/>
-                    <TextBlock x:Name="InlineError" Text="" Margin="14,0,0,0"
-                               FontSize="12" Foreground="{StaticResource StatusFail}"/>
-                </StackPanel>
-            </StackPanel>
-        </Border>
 
-        <!-- 测试类型 -->
-        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal">
-                <RadioButton x:Name="TabTcpUdp" Content="TCP/UDP 端口" IsChecked="True"
-                             Margin="0,0,16,0" Tag="tcpudp"/>
-                <RadioButton x:Name="TabDns" Content="DNS 解析" Margin="0,0,16,0" Tag="dns"/>
-                <RadioButton x:Name="TabHttp" Content="HTTP/TLS" Margin="0,0,16,0" Tag="http"/>
-                <RadioButton x:Name="TabPing" Content="Ping/路径" Margin="0,0,16,0" Tag="ping"/>
-                <RadioButton x:Name="TabNtp" Content="NTP" Margin="0,0,16,0" Tag="ntp"/>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="目标地址" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TargetInput" Tag="IP、域名或服务器名称"
+                                 KeyDown="TargetInput_KeyDown"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" x:Name="PortPanel" Width="110" Margin="0,0,12,0">
+                        <TextBlock Text="端口" Style="{StaticResource FieldLabelStyle}"/>
+                        <ComboBox x:Name="PortInput" IsEditable="True" Height="34" FontSize="14"
+                                  VerticalContentAlignment="Center"
+                                  ToolTip="可直接输入 1–65535，或从常用端口中选择">
+                            <ComboBoxItem IsSelected="True">445</ComboBoxItem>
+                            <ComboBoxItem>53</ComboBoxItem>
+                            <ComboBoxItem>88</ComboBoxItem>
+                            <ComboBoxItem>389</ComboBoxItem>
+                            <ComboBoxItem>443</ComboBoxItem>
+                            <ComboBoxItem>1433</ComboBoxItem>
+                            <ComboBoxItem>3389</ComboBoxItem>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Width="90" Margin="0,0,12,0">
+                        <TextBlock Text="超时（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TimeoutInput" Text="3"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button x:Name="StartButton" Content="开始测试"
+                                Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0"
+                                Click="Start_Click"/>
+                        <Button x:Name="StopButton" Content="停止"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                IsEnabled="False" Click="Stop_Click"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock x:Name="InlineError" Foreground="{StaticResource StatusFail}"
+                           Style="{StaticResource HintTextStyle}" Margin="0,8,0,0"
+                           Visibility="Collapsed"/>
+                <TextBlock x:Name="TypeHint" Style="{StaticResource HintTextStyle}" Margin="0,8,0,0"/>
             </StackPanel>
         </Border>
 
         <!-- 结果 -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*" MinWidth="420"/>
+                <ColumnDefinition Width="*" MinWidth="280"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" x:Name="ResultTitle" Text="测试结果"
                                Style="{StaticResource SectionTitleStyle}"/>
-                    <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0"
-                              SelectionChanged="ResultRow_Selected">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="探针" Binding="{Binding Probe}" Width="110"/>
-                            <DataGridTemplateColumn Header="结论" Width="92">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border Background="{Binding LevelBrush}" CornerRadius="10"
-                                                Padding="9,2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding Level}" FontSize="11" Foreground="White"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="110"/>
-                            <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="110"/>
-                            <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="80"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Grid Margin="0,6,0,0">
+                        <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}"
+                                  SelectionChanged="ResultRow_Selected">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="探针" Binding="{Binding Probe}" Width="*"/>
+                                <DataGridTemplateColumn Header="结论" Width="96">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding LevelBrush}" CornerRadius="10"
+                                                    Padding="9,2" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding Level}" FontSize="11" Foreground="White"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="100"/>
+                                <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="100"/>
+                                <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="80"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <TextBlock Text="填写目标后点击“开始测试”，结果显示在这里">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Items.Count, ElementName=ResultGrid}"
+                                                     Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
                 </DockPanel>
             </Border>
 
@@ -97,12 +131,12 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" x:Name="EvidenceTitle" Text="观察事实与证据"
                                Style="{StaticResource SectionTitleStyle}"/>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <TextBox x:Name="DetailBox" IsReadOnly="True" TextWrapping="Wrap"
-                                 BorderThickness="0" Background="Transparent"
-                                 FontFamily="Consolas" FontSize="12" VerticalContentAlignment="Top"
-                                 MinHeight="300"/>
-                    </ScrollViewer>
+                    <TextBox x:Name="DetailBox" IsReadOnly="True" TextWrapping="Wrap"
+                             BorderThickness="0" Background="Transparent"
+                             FontFamily="Consolas" FontSize="12" VerticalContentAlignment="Top"
+                             VerticalScrollBarVisibility="Auto"
+                             Tag="选择左侧一行结果查看观察事实、结论依据与限制"
+                             AcceptsReturn="True" Margin="0,6,0,0"/>
                 </DockPanel>
             </Border>
         </Grid>

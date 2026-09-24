@@ -29,6 +29,12 @@ public partial class BatchPage : UserControl
     private async void MonitorStart_Click(object sender, RoutedEventArgs e)
     {
         var target = MonitorTargetInput.Text.Trim();
+        if (target.Length == 0)
+        {
+            MonitorSummary.Text = "请输入监测目标（host:port）";
+            MonitorTargetInput.Focus();
+            return;
+        }
         var parts = target.Split(':');
         int port = parts.Length > 1 && int.TryParse(parts[1], out var p) ? p : 80;
         int interval = int.TryParse(MonitorIntervalInput.Text, out var i) ? i : 60;
@@ -107,7 +113,12 @@ public partial class BatchPage : UserControl
             .Select(t => t.Trim())
             .Where(t => t.Length > 0)
             .ToList();
-        if (targets.Count == 0) return;
+        if (targets.Count == 0)
+        {
+            SummaryText.Text = "请至少输入一个目标（每行 host:port）";
+            TargetsInput.Focus();
+            return;
+        }
 
         int concurrency = Math.Clamp(int.TryParse(ConcurrencyInput.Text, out var c) ? c : 8, 1, 32);
         var timeout = TimeSpan.FromSeconds(double.TryParse(TimeoutInput.Text, out var s) ? s : 3);

@@ -68,6 +68,16 @@ public partial class HistoryPage : UserControl
 
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await LoadAsync().ConfigureAwait(true);
 
+    /// <summary>双击数据行 = 打开报告（最常用操作）；双击表头/空白区不触发。</summary>
+    private void HistoryGrid_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject src &&
+            ItemsControl.ContainerFromElement(HistoryGrid, src) is DataGridRow)
+        {
+            OpenReport_Click(sender, e);
+        }
+    }
+
     private void OpenReport_Click(object sender, RoutedEventArgs e)
     {
         if (HistoryGrid.SelectedItem is not HistoryRow row)

@@ -41,7 +41,6 @@ public partial class ScenarioPage : UserControl
         foreach (var u in AppServices.Instance.UserTemplates.All)
             items.Add(new TemplateItem(u.Id, $"{u.Name}（自定义 v{u.Version}）", u.Direction, u.Id));
         TemplateList.ItemsSource = items;
-        TemplateList.DisplayMemberPath = "Name";
         if (TemplateList.SelectedIndex < 0) TemplateList.SelectedIndex = 0;
     }
 
@@ -73,7 +72,8 @@ public partial class ScenarioPage : UserControl
         var domain = DomainInput.Text.Trim();
         if (target.Length == 0)
         {
-            MessageBox.Show("请输入目标主机", "NetFlow");
+            ProgressText.Text = "请输入目标主机";
+            TargetInput.Focus();
             return;
         }
 
