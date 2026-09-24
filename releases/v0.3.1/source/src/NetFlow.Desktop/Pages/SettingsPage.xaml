@@ -1,0 +1,314 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <TabControl>
+        <!-- ============ 常规 ============ -->
+        <TabItem Header="常规">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                <StackPanel HorizontalAlignment="Stretch" TextElement.Foreground="{StaticResource TextPrimary}">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="网络测试默认值" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,4,0,10"
+                                       Text="用作“快速测试”和“批量任务”的初始值。修改后自动保存，重新打开页面后生效。"/>
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="默认超时（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="DefaultTimeoutInput" IsEditable="True" Width="120"
+                                              LostFocus="Setting_Changed" SelectionChanged="Setting_Changed"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="批量任务默认并发数" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="DefaultConcurrencyInput" IsEditable="True" Width="140"
+                                              LostFocus="Setting_Changed" SelectionChanged="Setting_Changed"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="测试源网卡" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,4,0,10"
+                                       Text="测试须指定源网卡。可在窗口顶部切换，所选网卡将被保留。默认使用带默认网关的以太网卡。"/>
+                            <Button Content="恢复默认源网卡" Style="{StaticResource SecondaryButtonStyle}"
+                                    HorizontalAlignment="Left" Click="ResetSource_Click"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- ============ 抓包与分析 ============ -->
+        <TabItem Header="抓包与分析">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                <StackPanel HorizontalAlignment="Stretch" TextElement.Foreground="{StaticResource TextPrimary}">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="抓包默认值" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,4,0,10"
+                                       Text="作为“抓包分析”页的初始值。"/>
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="默认抓包方式" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="CaptureModeInput" Width="280" SelectionChanged="Setting_Changed">
+                                        <ComboBoxItem>记录后分析（保存 PCAPNG）</ComboBoxItem>
+                                        <ComboBoxItem>实时显示（不保存文件）</ComboBoxItem>
+                                    </ComboBox>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="默认最长时长（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="CaptureDurationInput" IsEditable="True" Width="140"
+                                              LostFocus="Setting_Changed" SelectionChanged="Setting_Changed"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="默认截断（字节）" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="CaptureSnapInput" IsEditable="True" Width="140"
+                                              LostFocus="Setting_Changed" SelectionChanged="Setting_Changed"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="抓包引擎" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock x:Name="PktmonText" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="TsharkText" Margin="0,6,0,0" TextWrapping="Wrap"
+                                       Foreground="{StaticResource TextSecondary}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button Content="重新检测 Pktmon" Style="{StaticResource SecondaryButtonStyle}"
+                                        Margin="0,0,10,0" Click="Detect_Click"/>
+                                <Button Content="重新检测 TShark" Style="{StaticResource SecondaryButtonStyle}"
+                                        Click="DetectTshark_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="权限" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock x:Name="ElevatedText" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,6,0,0"
+                                       Text="抓包时，本程序会以管理员身份启动独立的抓包进程，主程序仍以标准权限运行。"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- ============ 数据与隐私 ============ -->
+        <TabItem Header="数据与隐私">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                <StackPanel HorizontalAlignment="Stretch" TextElement.Foreground="{StaticResource TextPrimary}">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="报告脱敏" Style="{StaticResource SectionTitleStyle}"/>
+                            <CheckBox x:Name="RedactionToggle" Margin="0,8,0,0"
+                                      Content="导出报告时对敏感字段脱敏（Authorization、Cookie、令牌、密码）"
+                                      Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,6,0,0"
+                                       Text="报告脱敏不作用于 PCAPNG：导出的抓包文件可能含原始业务数据，请妥善保管。"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="存储与留存" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock x:Name="StorageText" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="留存天数" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="RetentionInput" IsEditable="True" Width="120"
+                                              LostFocus="Setting_Changed" SelectionChanged="Setting_Changed"/>
+                                </StackPanel>
+                                <Button Content="立即清理超期记录" Style="{StaticResource SecondaryButtonStyle}"
+                                        VerticalAlignment="Bottom" Margin="0,0,10,0" Click="Purge_Click"/>
+                                <Button Content="打开数据文件夹" Style="{StaticResource SecondaryButtonStyle}"
+                                        VerticalAlignment="Bottom" Click="OpenDataFolder_Click"/>
+                            </StackPanel>
+                            <TextBlock x:Name="PurgeStatus" Style="{StaticResource StatusLineStyle}" Margin="0,8,0,0"
+                                       Foreground="{StaticResource PrimaryBrush}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,6,0,0"
+                                       Text="不会自动删除数据。仅当确认“立即清理超期记录”后，才删除超过留存天数的诊断记录和证据文件夹。"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="输入历史" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,4,0,10"
+                                       Text="输入框下拉保留最近使用的目标、域和服务器（仅主机名或 IP）。"/>
+                            <Button Content="清除输入历史" Style="{StaticResource SecondaryButtonStyle}"
+                                    HorizontalAlignment="Left" Click="ClearRecent_Click"/>
+                            <TextBlock x:Name="ClearRecentStatus" Style="{StaticResource StatusLineStyle}"
+                                       Margin="0,8,0,0" Foreground="{StaticResource PrimaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- ============ AI 分析 ============ -->
+        <TabItem Header="AI 分析">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                <StackPanel HorizontalAlignment="Stretch" TextElement.Foreground="{StaticResource TextPrimary}">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="AI 深入分析" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,4,0,10"
+                                       Text="在“快速测试”“场景诊断”和“抓包分析”页面中点击“AI 分析”，由 AI 模型分析原因并提供排查建议。当前支持 DeepSeek。"/>
+                            <CheckBox x:Name="AiEnabledToggle" Content="启用 AI 分析"
+                                      Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="220"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="服务商" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="AiProviderInput" SelectedIndex="0" SelectionChanged="Setting_Changed">
+                                        <ComboBoxItem>DeepSeek</ComboBoxItem>
+                                    </ComboBox>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                    <TextBlock Text="API 地址" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBox x:Name="AiBaseUrlInput" LostFocus="Setting_Changed"
+                                             Tag="https://api.deepseek.com"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="模型" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="AiModelInput" IsEditable="True" LostFocus="Setting_Changed"
+                                              SelectionChanged="Setting_Changed"
+                                              ToolTip="deepseek-flash：响应快；deepseek-v4-pro：能力更强、耗时更长。可点“获取模型列表”获取最新模型">
+                                        <ComboBoxItem>deepseek-flash</ComboBoxItem>
+                                        <ComboBoxItem>deepseek-v4-pro</ComboBoxItem>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="API Key" Style="{StaticResource FieldLabelStyle}" Margin="0,12,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <PasswordBox x:Name="ApiKeyBox" Margin="0,0,10,0"/>
+                                <Button Grid.Column="1" Content="保存密钥" Style="{StaticResource PrimaryButtonStyle}"
+                                        Margin="0,0,10,0" Click="SaveKey_Click"/>
+                                <Button Grid.Column="2" Content="清除密钥" Style="{StaticResource SecondaryButtonStyle}"
+                                        Click="ClearKey_Click"/>
+                            </Grid>
+                            <TextBlock x:Name="ApiKeyStatus" Style="{StaticResource HintTextStyle}" Margin="0,6,0,0"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,2,0,0"
+                                       Text="密钥使用 Windows 数据保护 API（当前用户）加密后保存在本机数据库，不会写入日志或报告。获取密钥：https://platform.deepseek.com/api_keys"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="超时（秒）" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="AiTimeoutInput" IsEditable="True" Width="120"
+                                              LostFocus="Setting_Changed" SelectionChanged="Setting_Changed"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="推理强度" Style="{StaticResource FieldLabelStyle}"/>
+                                    <ComboBox x:Name="AiEffortInput" Width="200" SelectionChanged="Setting_Changed"
+                                              ToolTip="强度越高，分析越深入，耗时也越长；输出被截断时请降低强度">
+                                        <ComboBoxItem>低（较快，推荐）</ComboBoxItem>
+                                        <ComboBoxItem>高</ComboBoxItem>
+                                        <ComboBoxItem>最高</ComboBoxItem>
+                                        <ComboBoxItem>不指定（服务端默认）</ComboBoxItem>
+                                    </ComboBox>
+                                </StackPanel>
+                                <Button Content="测试连接" Style="{StaticResource SecondaryButtonStyle}"
+                                        VerticalAlignment="Bottom" Margin="0,0,10,0" Click="TestAi_Click"/>
+                                <Button Content="获取模型列表" Style="{StaticResource SecondaryButtonStyle}"
+                                        VerticalAlignment="Bottom" Click="ListModels_Click"/>
+                            </StackPanel>
+                            <TextBlock x:Name="AiTestResult" Style="{StaticResource StatusLineStyle}" Margin="0,8,0,0"
+                                       Foreground="{StaticResource PrimaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="发送内容与隐私" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,4,0,8"
+                                       Text="仅发送本次结果的摘要文本（目标、源网卡、检查项结论及观察事实；抓包为分析摘要和前 150 条数据包摘要），不含 PCAPNG 文件。密码、令牌等敏感字段始终被屏蔽，无法关闭。"/>
+                            <CheckBox x:Name="AiConfirmToggle" Content="每次发送前预览并确认（推荐）"
+                                      Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                            <CheckBox x:Name="AiMaskToggle" Margin="0,8,0,0"
+                                      Content="发送前将 IPv4 地址替换为占位符，结果在本地还原"
+                                      Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,8,0,0"
+                                       Text="内容将发送至所配置的 API 地址（默认 DeepSeek 云服务），请确认符合组织的数据外发规定。AI 结论仅供参考，请结合证据核实。"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- ============ 关于与环境 ============ -->
+        <TabItem Header="关于与环境">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                <StackPanel HorizontalAlignment="Stretch"
+                            TextElement.Foreground="{StaticResource TextPrimary}">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="关于" Style="{StaticResource SectionTitleStyle}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,14,0,12">
+                                <TextBlock Text="NetFlow" FontSize="20" FontWeight="SemiBold"/>
+                                <TextBlock Text="网络与服务诊断" FontSize="12" VerticalAlignment="Bottom"
+                                           Margin="8,0,0,3" Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="版本" Margin="0,0,0,8" Foreground="{StaticResource TextSecondary}"/>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock x:Name="AboutVersionText"/>
+                                    <TextBlock x:Name="AboutPrivilegeText" Margin="10,0,0,0"
+                                               Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Row="1" Text="开发者" Margin="0,0,0,8" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,0,0,8">
+                                    <Hyperlink x:Name="DeveloperLink" RequestNavigate="Link_RequestNavigate"><Run x:Name="DeveloperRun"/></Hyperlink>
+                                    <Run Text="（GitHub）" Foreground="{StaticResource TextSecondary}"/>
+                                </TextBlock>
+                                <TextBlock Grid.Row="2" Text="源码仓库" Margin="0,0,0,8" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,0,0,8">
+                                    <Hyperlink x:Name="RepositoryLink" RequestNavigate="Link_RequestNavigate"><Run x:Name="RepositoryRun"/></Hyperlink>
+                                </TextBlock>
+                                <TextBlock Grid.Row="3" Text="许可证" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" x:Name="LicenseText"/>
+                            </Grid>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,12,0,0"
+                                       Text="本应用按 GPL-3.0 许可证发布；随源码分发的第三方组件清单见仓库 THIRD-PARTY-NOTICES.md。"/>
+                            <Separator Margin="0,16,0,14"/>
+                            <TextBlock Text="隐私与数据" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,6,0,0"
+                                       Text="NetFlow 不收集遥测、崩溃报告或使用统计，也不会向开发者或任何第三方发送使用数据。诊断请求仅发往您指定的目标。唯一可能的对外请求来自“AI 分析”：仅在您启用该功能并确认后，才会将脱敏后的摘要发送至所配置的 API 地址（默认 DeepSeek），可在“AI 分析”设置中关闭。"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="运行环境" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock x:Name="AboutText" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+    </TabControl>
+</UserControl>

@@ -1,0 +1,23 @@
+{
+  "Dc": {
+    "Host": "192.168.10.11",
+    "Fqdn": "dc01.corp.example.com",
+    "DomainFqdn": "corp.example.com",
+    "NetbiosDomain": "EXAMPLE"
+  },
+  "FileServer": {
+    "Host": "192.168.10.15",
+    "Fqdn": "fs01.corp.example.com"
+  },
+  "Esxi": {
+    "Host": "192.168.10.200"
+  },
+  "DomainAdmin": {
+    "User": "EXAMPLE\\testadmin",
+    "Password": "<在此填入密码；本文件已被 gitignore，严禁提交>"
+  },
+  "DomainUser": {
+    "User": "EXAMPLE\\testuser01",
+    "Password": "<在此填入密码>"
+  }
+}

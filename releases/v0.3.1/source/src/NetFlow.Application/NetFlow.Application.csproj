@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NetFlow.Domain\NetFlow.Domain.csproj" />
+    <ProjectReference Include="..\NetFlow.Probes\NetFlow.Probes.csproj" />
+    <ProjectReference Include="..\NetFlow.Windows\NetFlow.Windows.csproj" />
+    <ProjectReference Include="..\NetFlow.Capture\NetFlow.Capture.csproj" />
+    <ProjectReference Include="..\NetFlow.Persistence\NetFlow.Persistence.csproj" />
+    <ProjectReference Include="..\NetFlow.Reporting\NetFlow.Reporting.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
