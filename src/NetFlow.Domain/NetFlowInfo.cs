@@ -6,4 +6,8 @@ public static class NetFlowInfo
     public const string ProductName = "NetFlow";
     public const string Version = "0.3.0";
     public const string UserAgent = "NetFlow/0.3.0";
+    public const string Developer = "enpiaohj";
+    public const string DeveloperUrl = "https://github.com/enpiaohj";
+    public const string RepositoryUrl = "https://github.com/enpiaohj/netflow";
+    public const string License = "GPL-3.0";
 }

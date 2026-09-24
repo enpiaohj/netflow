@@ -253,10 +253,57 @@
         <!-- ============ 关于与环境 ============ -->
         <TabItem Header="关于与环境">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                <StackPanel MaxWidth="900" HorizontalAlignment="Left"
+                            TextElement.Foreground="{StaticResource TextPrimary}">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="关于" Style="{StaticResource SectionTitleStyle}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,14,0,12">
+                                <TextBlock Text="NetFlow" FontSize="20" FontWeight="SemiBold"/>
+                                <TextBlock Text="网络与服务诊断" FontSize="12" VerticalAlignment="Bottom"
+                                           Margin="8,0,0,3" Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="版本" Margin="0,0,0,8" Foreground="{StaticResource TextSecondary}"/>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock x:Name="AboutVersionText"/>
+                                    <TextBlock x:Name="AboutPrivilegeText" Margin="10,0,0,0"
+                                               Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Row="1" Text="开发者" Margin="0,0,0,8" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,0,0,8">
+                                    <Hyperlink x:Name="DeveloperLink" RequestNavigate="Link_RequestNavigate"><Run x:Name="DeveloperRun"/></Hyperlink>
+                                    <Run Text="（GitHub）" Foreground="{StaticResource TextSecondary}"/>
+                                </TextBlock>
+                                <TextBlock Grid.Row="2" Text="源码仓库" Margin="0,0,0,8" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,0,0,8">
+                                    <Hyperlink x:Name="RepositoryLink" RequestNavigate="Link_RequestNavigate"><Run x:Name="RepositoryRun"/></Hyperlink>
+                                </TextBlock>
+                                <TextBlock Grid.Row="3" Text="许可证" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" x:Name="LicenseText"/>
+                            </Grid>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,12,0,0"
+                                       Text="本应用按 GPL-3.0 许可证发布；随源码分发的第三方组件清单见仓库 THIRD-PARTY-NOTICES.md。"/>
+                            <Separator Margin="0,16,0,14"/>
+                            <TextBlock Text="隐私与数据" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Style="{StaticResource HintTextStyle}" Margin="0,6,0,0"
+                                       Text="NetFlow 不收集遥测、崩溃报告或使用统计，也不会向开发者或任何第三方发送使用数据。诊断请求仅发往您指定的目标。唯一可能的对外请求来自“AI 分析”：仅在您启用该功能并确认后，才会将脱敏后的摘要发送至所配置的 API 地址（默认 DeepSeek），可在“AI 分析”设置中关闭。"/>
+                        </StackPanel>
+                    </Border>
+
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
-                            <TextBlock Text="NetFlow" Style="{StaticResource SectionTitleStyle}"/>
+                            <TextBlock Text="运行环境" Style="{StaticResource SectionTitleStyle}"/>
                             <TextBlock x:Name="AboutText" Margin="0,6,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>

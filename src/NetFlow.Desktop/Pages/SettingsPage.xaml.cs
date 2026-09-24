@@ -32,15 +32,34 @@ public partial class SettingsPage : UserControl
                 $"数据库：{services.DatabasePath}（{(services.PersistenceReady ? "可用" : "不可用")}）\n" +
                 $"证据文件夹：{services.EvidenceRoot}\n" +
                 "设置、端口包、输入历史和诊断记录均保存在上述 SQLite 数据库中。";
+            AboutVersionText.Text = $"v{NetFlowInfo.Version}";
+            AboutPrivilegeText.Text = NetworkInterfaceHelper.IsElevated() ? "已使用管理员权限" : "标准用户权限";
+            DeveloperRun.Text = NetFlowInfo.Developer;
+            DeveloperLink.NavigateUri = new Uri(NetFlowInfo.DeveloperUrl);
+            RepositoryRun.Text = NetFlowInfo.RepositoryUrl;
+            RepositoryLink.NavigateUri = new Uri(NetFlowInfo.RepositoryUrl);
+            LicenseText.Text = NetFlowInfo.License;
             AboutText.Text =
-                $"版本：v{NetFlowInfo.Version}\n" +
-                $"权限：{(NetworkInterfaceHelper.IsElevated() ? "管理员" : "普通用户")}\n" +
                 $"数据库：{services.DatabasePath}\n" +
                 $"证据文件夹：{services.EvidenceRoot}\n" +
                 $"数据库状态：{(services.PersistenceReady ? "正常" : $"不可用（{services.PersistenceError}）。设置和端口包仅在本次运行期间有效")}";
             await DetectPktmonAsync().ConfigureAwait(true);
             await DetectTsharkAsync().ConfigureAwait(true);
         };
+    }
+
+    private void Link_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        e.Handled = true;
+        try
+        {
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception)
+        {
+            MessageBox.Show("无法打开链接，请检查系统默认浏览器设置。", "NetFlow",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private static void Fill(ComboBox combo, params string[] values)
