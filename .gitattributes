@@ -1,0 +1,12 @@
+* text=auto
+*.sln text eol=crlf
+*.slnx text eol=crlf
+*.cs text diff=csharp
+*.xaml text
+*.md text
+*.json text
+*.ps1 text eol=crlf
+*.ico binary
+*.png binary
+*.pcapng binary
+*.etl binary

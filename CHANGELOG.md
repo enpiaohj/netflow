@@ -2,6 +2,18 @@
 
 本文件记录 NetFlow 各正式版本的变更。每个版本的完整快照与发布说明见 `releases/vX.Y.Z/CHANGELOG.md`。版本号遵循语义化版本（MAJOR.MINOR.PATCH）。
 
+## [未发布]
+
+### 新增
+
+- 许可证：按 GPL-3.0 发布，新增 `LICENSE`、`THIRD-PARTY-NOTICES.md`、`SECURITY.md`、`.gitattributes`。
+- 设置 → 关于与环境：按“关于 / 隐私与数据 / 运行环境”重新布局，显示版本、开发者、源码仓库、许可证及隐私说明。
+
+### 变更
+
+- 顶栏左上角品牌名右侧显示版本号，移除左下角版本文字。
+- 集成测试示例配置与默认值改用示例域名（`corp.example.com`）；真实环境值仍只放本地 `testsettings.local.json`。
+
 ## [0.3.0] - 2026-09-24
 
 ### 新增

@@ -35,12 +35,12 @@ dotnet publish src/NetFlow.Desktop -c Release -r win-x64 --self-contained true -
 - AI 服务 API Key 仅以 DPAPI 密文存入本地数据库；不得出现在代码、测试、文档、脚本、日志或提交中。测试用密钥只通过环境变量或应用设置页传入。
 - AI 分析仅发送脱敏后的摘要文本，敏感字段屏蔽不可关闭；API 地址必须使用 https（本机回环地址除外）。
 
-## 测试环境约定（内网测试域 corp.example.com）
+## 测试环境约定（示例域 corp.example.com；真实值见本地 testsettings.local.json）
 
 | 角色 | 主机 | 用途 |
 |---|---|---|
-| 域控 | dc（192.168.10.11，dc01） | AD/DNS/Kerberos/LDAP/SMB/NTP 场景 |
-| 成员服务器 | fs（192.168.10.15，fs01） | 文件共享 / SQL Server / IIS(HTTP) / RDP / WinRM |
+| 域控 | dc（192.168.10.11，示例主机名 dc01） | AD/DNS/Kerberos/LDAP/SMB/NTP 场景 |
+| 成员服务器 | fs（192.168.10.15，示例主机名 fs01） | 文件共享 / SQL Server / IIS(HTTP) / RDP / WinRM |
 | ESXi | 192.168.10.200 | TLS 证书名称不匹配用例 |
 | 开发机 | 192.168.10.100，工作组机器，多网卡（以太网 + 3 个虚拟网卡） | 源网卡选择 / 抓包提权测试 |
 
@@ -61,6 +61,7 @@ dotnet publish src/NetFlow.Desktop -c Release -r win-x64 --self-contained true -
 ## 文档
 
 - 项目文档放 `docs/`，命名 `YYYY-MM-DD-内容-v<版本>.md`。
+- 许可证 GPL-3.0；依赖变更时同步更新 `THIRD-PARTY-NOTICES.md`。仓库中不得出现真实内网域名、主机名、账号；示例值用 `corp.example.com` / `dc01` / `fs01`。
 - 现有文档：设计方案 v1.0、设计变更说明 v1.1、用户手册 v1.0；根目录 `README.md`、`CHANGELOG.md` 随版本发布同步更新。
 - 功能或架构变更时同步更新：README、用户手册、设计变更说明（新增变更项与缺陷修复）、CHANGELOG。
 - UI 概念图不入库，路径见 README。

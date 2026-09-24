@@ -2,7 +2,9 @@
 
 面向企业 IT 工程师的网络与服务诊断桌面应用。从一个客户端或服务器出发，选择目标与业务场景，依次执行本机环境检查、DNS、路径、TCP/UDP 端口、应用协议检查、抓包、服务与事件日志检查，最终输出附有证据、结论等级、限制和下一步建议的诊断报告。
 
-当前版本：**v0.3.0**（详见 [CHANGELOG.md](CHANGELOG.md)）。
+当前版本：**v0.3.0**（详见 [CHANGELOG.md](CHANGELOG.md)）。许可证：[GPL-3.0](LICENSE)。
+
+> 本产品名称“NetFlow”与 Cisco 的 NetFlow 流量导出协议无关：NetFlow 是面向 Windows 的网络与服务连通性诊断工具，不采集或分析 NetFlow / IPFIX 流量记录。
 
 ## 产品验收核心
 
@@ -98,8 +100,18 @@ dotnet publish src/NetFlow.Desktop -c Release -r win-x64 --self-contained true -
 
 集成测试需要真实环境。复制 `tests/NetFlow.IntegrationTests/testsettings.example.json` 为 `testsettings.local.json` 并填入实际凭据。`testsettings.local.json` 已被 `.gitignore` 排除，**严禁提交任何真实凭据**（包括 AI 服务的 API Key）。
 
-UI 概念设计图（13 页）位于产品设计工作区，不入 Git 历史：
-`（产品设计工作区）`
+UI 概念设计图不随仓库分发。
+
+## 隐私与数据
+
+- 不收集遥测、崩溃报告或使用统计，不向开发者或第三方发送使用数据。
+- 诊断请求仅发往用户指定的目标；诊断功能默认只读。
+- 唯一可能的对外请求来自“AI 分析”：仅在用户启用并确认后，将脱敏后的摘要发送至所配置的 API 地址（默认 DeepSeek，须为 https）。API Key 由用户自行提供，以 DPAPI（当前用户）加密存入本地数据库。
+- 设置、端口包、输入历史与诊断记录均保存在本机 SQLite 数据库中。
+
+## 许可证
+
+按 GNU General Public License v3.0 发布，全文见 [LICENSE](LICENSE)。随发布产物分发的第三方组件及其许可证见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。安全问题请按 [SECURITY.md](SECURITY.md) 报告。
 
 ## 相关文档
 
