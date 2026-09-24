@@ -1,0 +1,99 @@
+<Window x:Class="NetFlow.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="NetFlow｜网络与服务诊断"
+        Icon="Assets/NetFlow.ico"
+        Height="780" Width="1280" MinHeight="640" MinWidth="1080"
+        FontFamily="Segoe UI, Microsoft YaHei UI" FontSize="13"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBackground}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="190"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧导航 -->
+        <Border Grid.Column="0" Background="White" BorderBrush="{StaticResource BorderLight}"
+                BorderThickness="0,0,1,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="16,18,16,10">
+                    <TextBlock Text="NetFlow" FontSize="20" FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryBrush}"/>
+                    <TextBlock Text="网络与服务诊断" FontSize="11"
+                               Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Bottom" Margin="16,0,16,14">
+                    <TextBlock x:Name="VersionText" Text="v0.2.0" FontSize="11"
+                               Foreground="{StaticResource TextSecondary}"/>
+                </StackPanel>
+                <StackPanel Margin="0,12,0,0">
+                    <RadioButton x:Name="NavOverview" Content="🏠  总览" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" IsChecked="True" Checked="Nav_Checked" Tag="overview"/>
+                    <RadioButton Content="⚡  快速测试" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="quicktest"/>
+                    <RadioButton Content="🧭  场景诊断" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="scenario"/>
+                    <RadioButton Content="📡  抓包分析" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="capture"/>
+                    <RadioButton Content="🖥  服务与日志" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="services"/>
+                    <RadioButton Content="🌐  本机网络" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="localnet"/>
+                    <RadioButton Content="🗂  批量任务" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="batch"/>
+                    <RadioButton Content="🕘  历史报告" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="history"/>
+                    <RadioButton Content="⚙  设置" Style="{StaticResource NavButtonStyle}"
+                                 GroupName="nav" Checked="Nav_Checked" Tag="settings"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- 右侧内容 -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 顶部状态栏：任务状态（设计文档 3.1 交互规范） -->
+            <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderLight}"
+                    BorderThickness="0,0,0,1" Padding="16,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <TextBlock Text="源网卡：" Foreground="{StaticResource TextSecondary}"
+                                   VerticalAlignment="Center"/>
+                        <ComboBox x:Name="SourceAdapterCombo" Width="330" Height="28" Margin="0,0,20,0"
+                                  DisplayMemberPath="Display" VerticalContentAlignment="Center"
+                                  SelectionChanged="SourceAdapterCombo_SelectionChanged"
+                                  ToolTip="测试出包所用的本机网卡。选择后，快速测试/场景诊断/批量任务会绑定该网卡的地址；ICMP、LDAP 等无法绑定的探针会如实标注"/>
+                        <TextBlock Text="状态：" Foreground="{StaticResource TextSecondary}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="StatusText" Text="就绪" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextPrimary}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="ActivityButton" Visibility="Collapsed"
+                                Click="ActivityButton_Click" Cursor="Hand"
+                                Background="#FFF7ED" BorderBrush="#FED7AA"
+                                BorderThickness="1" Padding="10,3" Margin="0,0,14,0"
+                                ToolTip="点击跳转到运行中的任务页面">
+                            <TextBlock x:Name="ActivityText" Text="● 运行中"
+                                       Foreground="#C2410C" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" MaxWidth="420"/>
+                        </Button>
+                        <TextBlock x:Name="ElevatedText" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondary}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ContentControl Grid.Row="1" x:Name="PageHost" Margin="16"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,204 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.ScenarioPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="目标主机" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TargetInput" Tag="IP 或域名"
+                                 KeyDown="TargetInput_KeyDown"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                        <TextBlock Text="域（可选）" Style="{StaticResource FieldLabelStyle}"
+                                   ToolTip="用于 SRV / SPN 类查询中的 {domain} 占位符"/>
+                        <TextBox x:Name="DomainInput" Tag="如 corp.example.com"
+                                 ToolTip="用于 SRV / SPN 类查询中的 {domain} 占位符"/>
+                    </StackPanel>
+                    <CheckBox Grid.Column="2" x:Name="CaptureToggle" Content="同时抓包"
+                              VerticalAlignment="Bottom" Margin="0,0,14,8"
+                              ToolTip="诊断期间同步抓包，需要管理员权限（将通过 UAC 按需提升）"/>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button x:Name="RunButton" Content="开始诊断"
+                                Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,10,0" Click="Run_Click"/>
+                        <Button x:Name="StopButton" Content="停止"
+                                Style="{StaticResource SecondaryButtonStyle}" IsEnabled="False"
+                                Click="Stop_Click"/>
+                    </StackPanel>
+                </Grid>
+                <TextBlock x:Name="ProgressText" Text="" Margin="0,8,0,0"
+                           Style="{StaticResource StatusLineStyle}"
+                           Foreground="{StaticResource PrimaryBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230"/>
+                <ColumnDefinition Width="2*" MinWidth="380"/>
+                <ColumnDefinition Width="*" MinWidth="240"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 模板列表 -->
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+                <DockPanel>
+                    <Button DockPanel.Dock="Bottom" x:Name="SaveTemplateButton"
+                            Content="保存为新模板" Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,8,0,0" Click="SaveTemplate_Click"/>
+                    <TextBlock DockPanel.Dock="Top" Text="场景模板" Style="{StaticResource SectionTitleStyle}"/>
+                    <ListBox x:Name="TemplateList" BorderThickness="0" Background="Transparent"
+                             Margin="0,6,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap" Padding="2,3"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- 检查结果 -->
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" x:Name="ResultTitle" Text="诊断概览"
+                               Style="{StaticResource SectionTitleStyle}"/>
+                    <!-- KPI 统计卡（对齐概念图 01 诊断概览） -->
+                    <WrapPanel DockPanel.Dock="Top" x:Name="StatCards" Visibility="Collapsed"
+                               Margin="0,8,0,10">
+                        <Border Style="{StaticResource KpiCardStyle}" Background="#F0FDF4" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✔" FontSize="22" Foreground="#16A34A" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock x:Name="KpiPass" Text="0" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="通过" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource KpiCardStyle}" Background="#FFFBEB" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚠" FontSize="22" Foreground="#D97706" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock x:Name="KpiWarn" Text="0" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="警告" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource KpiCardStyle}" Background="#EFF6FF" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🕐" FontSize="20" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock x:Name="KpiUnconfirmed" Text="0" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="未确认" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource KpiCardStyle}" Background="#FEF2F2">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✖" FontSize="20" Foreground="#DC2626" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock x:Name="KpiFail" Text="0" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="失败" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                    <!-- 事件时间线（对齐概念图 01 底部时间线：彩点 + 事件） -->
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource BorderLight}"
+                            BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,6,0,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count, ElementName=EventTimeline}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <TextBlock Text="抓包与测试事件时间线" Style="{StaticResource SectionTitleStyle}"/>
+                            <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="EventTimeline">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                <Ellipse Width="8" Height="8" Margin="0,0,8,0"
+                                                         VerticalAlignment="Center"
+                                                         Fill="{Binding DotBrush}"/>
+                                                <TextBlock Text="{Binding Time}" FontSize="11"
+                                                           Foreground="{StaticResource TextSecondary}"
+                                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <TextBlock Text="{Binding Text}" FontSize="12"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+                    <Grid Margin="0,6,0,0">
+                    <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#" Binding="{Binding No}" Width="34"/>
+                            <DataGridTextColumn Header="检查项" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTemplateColumn Header="结论" Width="92">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding LevelBrush}" CornerRadius="10"
+                                                Padding="9,2" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding Level}" FontSize="11" Foreground="White"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="100"/>
+                            <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="100"/>
+                            <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="76"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock Text="选择场景模板并填写目标，点击“开始诊断”">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count, ElementName=ResultGrid}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <!-- 证据面板 -->
+            <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="诊断证据" Style="{StaticResource SectionTitleStyle}"/>
+                    <Button DockPanel.Dock="Bottom" x:Name="ExportButton" Content="导出报告"
+                            Style="{StaticResource PrimaryButtonStyle}" Margin="0,8,0,0"
+                            IsEnabled="False" Click="Export_Click"/>
+                    <TextBox x:Name="EvidenceBox" IsReadOnly="True" TextWrapping="Wrap"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                             BorderThickness="0" Background="Transparent" VerticalContentAlignment="Top"
+                             FontFamily="Consolas" FontSize="12" Margin="0,6,0,0"
+                             Tag="诊断完成后，这里显示每个检查项的观察事实与证据"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,119 @@
+<UserControl x:Class="NetFlow.Desktop.Pages.ServicesPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource CardStyle}" Margin="0,0,0,12">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock Text="目标服务器" Style="{StaticResource FieldLabelStyle}"/>
+                        <TextBox x:Name="TargetInput" Tag="留空 = 本机；远端请输入服务器名称或 IP"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="刷新" Style="{StaticResource PrimaryButtonStyle}"
+                            VerticalAlignment="Bottom" Click="Refresh_Click"/>
+                </Grid>
+                <TextBlock Text="远端查询使用当前 Windows 身份的已有权限；无权限时显示未检查及原因，不推测服务状态。"
+                           Style="{StaticResource HintTextStyle}" Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <TabControl Grid.Row="1">
+            <TabItem Header="服务状态">
+                <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
+                    <Grid>
+                    <DataGrid x:Name="ServiceGrid" Style="{StaticResource DataGridStyle}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="服务名" Binding="{Binding ServiceName}" Width="160"/>
+                            <DataGridTextColumn Header="显示名称" Binding="{Binding DisplayName}" Width="*"/>
+                            <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="110"/>
+                            <DataGridTextColumn Header="启动类型" Binding="{Binding StartType}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock Text="点击右上角“刷新”加载服务状态（目标留空 = 本机）">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Items.Count, ElementName=ServiceGrid}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </Border>
+            </TabItem>
+            <TabItem Header="事件日志">
+                <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="日志" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox x:Name="LogNameInput" Text="System" Width="160"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="条数" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox x:Name="EventCountInput" Text="20" Width="70"/>
+                            </StackPanel>
+                            <Button Content="查询" Style="{StaticResource SecondaryButtonStyle}"
+                                    VerticalAlignment="Bottom" Click="Events_Click"/>
+                        </StackPanel>
+                        <Grid>
+                        <DataGrid x:Name="EventGrid" Style="{StaticResource DataGridStyle}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="时间" Binding="{Binding TimeLocal}" Width="150"/>
+                                <DataGridTextColumn Header="级别" Binding="{Binding Level}" Width="70"/>
+                                <DataGridTextColumn Header="事件 ID" Binding="{Binding EventId}" Width="80"/>
+                                <DataGridTextColumn Header="来源" Binding="{Binding Provider}" Width="140"/>
+                                <DataGridTextColumn Header="消息" Binding="{Binding Message}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <TextBlock Text="点击“查询”读取最近的事件日志">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource EmptyStateStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Items.Count, ElementName=EventGrid}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+            </TabItem>
+            <TabItem Header="监听端口">
+                <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="监听状态仅表示本机应用接受连接，不代表从远程主机一定可以访问该端口。"
+                                   FontSize="11" Foreground="{StaticResource TextSecondary}"
+                                   Margin="0,0,0,6"/>
+                        <DataGrid x:Name="ListenerGrid" Style="{StaticResource DataGridStyle}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="60"/>
+                                <DataGridTextColumn Header="本地地址" Binding="{Binding LocalAddress}" Width="130"/>
+                                <DataGridTextColumn Header="本地端口" Binding="{Binding LocalPort}" Width="90"/>
+                                <DataGridTextColumn Header="状态" Binding="{Binding State}" Width="110"/>
+                                <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="70"/>
+                                <DataGridTextColumn Header="进程" Binding="{Binding ProcessName}" Width="160"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+                </Border>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>
