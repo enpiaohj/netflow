@@ -15,9 +15,7 @@ TestResults/
 coverage/
 
 # ---- Release snapshots：源码与 CHANGELOG 入库，二进制产物不入库 ----
-# （git 无法在已排除的父目录内重新包含文件，需先放行目录本身）
-releases/**
-!releases/**/
+releases/**/*
 !releases/**/source/**
 !releases/**/CHANGELOG.md
 

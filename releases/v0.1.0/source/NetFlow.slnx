@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NetFlow.Application/NetFlow.Application.csproj" />
+    <Project Path="src/NetFlow.Capture/NetFlow.Capture.csproj" />
+    <Project Path="src/NetFlow.CaptureHost/NetFlow.CaptureHost.csproj" />
+    <Project Path="src/NetFlow.Cli/NetFlow.Cli.csproj" />
+    <Project Path="src/NetFlow.Desktop/NetFlow.Desktop.csproj" />
+    <Project Path="src/NetFlow.Domain/NetFlow.Domain.csproj" />
+    <Project Path="src/NetFlow.Persistence/NetFlow.Persistence.csproj" />
+    <Project Path="src/NetFlow.Probes/NetFlow.Probes.csproj" />
+    <Project Path="src/NetFlow.Reporting/NetFlow.Reporting.csproj" />
+    <Project Path="src/NetFlow.Windows/NetFlow.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NetFlow.Domain.Tests/NetFlow.Domain.Tests.csproj" />
+    <Project Path="tests/NetFlow.IntegrationTests/NetFlow.IntegrationTests.csproj" />
+    <Project Path="tests/NetFlow.Probes.Tests/NetFlow.Probes.Tests.csproj" />
+  </Folder>
+</Solution>

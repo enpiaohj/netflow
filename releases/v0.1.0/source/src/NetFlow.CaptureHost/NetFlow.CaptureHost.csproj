@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NetFlow.Domain\NetFlow.Domain.csproj" />
+    <ProjectReference Include="..\NetFlow.Capture\NetFlow.Capture.csproj" />
+    <ProjectReference Include="..\NetFlow.Windows\NetFlow.Windows.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
