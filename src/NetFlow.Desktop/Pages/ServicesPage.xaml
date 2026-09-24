@@ -138,7 +138,7 @@
                                 <DataGridTextColumn Header="本地端口" Binding="{Binding LocalPort}" Width="90"/>
                                 <DataGridTextColumn Header="状态" Binding="{Binding State}" Width="110"/>
                                 <DataGridTextColumn Header="PID" Binding="{Binding Pid}" Width="70"/>
-                                <DataGridTextColumn Header="进程" Binding="{Binding ProcessName}" Width="160"/>
+                                <DataGridTextColumn Header="进程" Binding="{Binding ProcessName}" Width="*"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </DockPanel>

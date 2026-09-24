@@ -82,6 +82,7 @@ public partial class BatchPage : UserControl
     {
         var show = PackEditor.Visibility != Visibility.Visible;
         PackEditor.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        PageGrid.MinHeight = show ? 880 : 600;
         PackManageButton.Content = show ? "收起端口包管理" : "管理端口包";
         if (show) LoadEditorFromSelection();
     }

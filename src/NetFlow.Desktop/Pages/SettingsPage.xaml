@@ -5,7 +5,7 @@
         <!-- ============ 常规 ============ -->
         <TabItem Header="常规">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                <StackPanel HorizontalAlignment="Stretch" TextElement.Foreground="{StaticResource TextPrimary}">
                     <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="网络测试默认值" Style="{StaticResource SectionTitleStyle}"/>
@@ -42,7 +42,7 @@
         <!-- ============ 抓包与分析 ============ -->
         <TabItem Header="抓包与分析">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                <StackPanel HorizontalAlignment="Stretch" TextElement.Foreground="{StaticResource TextPrimary}">
                     <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="抓包默认值" Style="{StaticResource SectionTitleStyle}"/>
@@ -100,7 +100,7 @@
         <!-- ============ 数据与隐私 ============ -->
         <TabItem Header="数据与隐私">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                <StackPanel HorizontalAlignment="Stretch" TextElement.Foreground="{StaticResource TextPrimary}">
                     <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="报告脱敏" Style="{StaticResource SectionTitleStyle}"/>
@@ -152,7 +152,7 @@
         <!-- ============ AI 分析 ============ -->
         <TabItem Header="AI 分析">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                <StackPanel HorizontalAlignment="Stretch" TextElement.Foreground="{StaticResource TextPrimary}">
                     <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="AI 深入分析" Style="{StaticResource SectionTitleStyle}"/>
@@ -253,7 +253,7 @@
         <!-- ============ 关于与环境 ============ -->
         <TabItem Header="关于与环境">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                <StackPanel MaxWidth="900" HorizontalAlignment="Left"
+                <StackPanel HorizontalAlignment="Stretch"
                             TextElement.Foreground="{StaticResource TextPrimary}">
                     <Border Style="{StaticResource CardStyle}" Margin="0,0,0,12">
                         <StackPanel>

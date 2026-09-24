@@ -175,8 +175,9 @@ public partial class SettingsPage : UserControl
         PktmonText.Text = "正在检测…";
         var cap = await PktmonCaptureController.DetectCapabilityAsync(CancellationToken.None)
             .ConfigureAwait(true);
+        var version = cap.Version.StartsWith('（') ? cap.Version : $"（{cap.Version}）";
         PktmonText.Text = cap.Available
-            ? $"已检测到 Windows Pktmon（{cap.Version}）。"
+            ? $"已检测到 Windows Pktmon{version}。"
             : $"无法使用 Pktmon：{cap.Error}。抓包不可用，仍可进行网络测试和导入分析。";
     }
 
@@ -186,7 +187,7 @@ public partial class SettingsPage : UserControl
         var cap = await TsharkAdapter.DetectAsync(CancellationToken.None).ConfigureAwait(true);
         TsharkText.Text = cap.Available
             ? $"TShark {cap.Version}（{cap.Path}）。用于深入解析 PCAPNG 文件，非默认抓包引擎。"
-            : $"未检测到 TShark（可选组件）。{cap.Error}";
+            : cap.Error.EndsWith('。') ? cap.Error : $"{cap.Error}。";
     }
 
     private async void Detect_Click(object sender, RoutedEventArgs e) =>
