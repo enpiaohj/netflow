@@ -66,11 +66,85 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" x:Name="ResultTitle" Text="诊断概览"
                                Style="{StaticResource SectionTitleStyle}"/>
+                    <!-- KPI 统计卡（对齐概念图 01 诊断概览） -->
+                    <WrapPanel DockPanel.Dock="Top" x:Name="StatCards" Visibility="Collapsed"
+                               Margin="0,8,0,10">
+                        <Border Style="{StaticResource KpiCardStyle}" Background="#F0FDF4" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✔" FontSize="22" Foreground="#16A34A" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock x:Name="KpiPass" Text="0" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="通过" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource KpiCardStyle}" Background="#FFFBEB" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚠" FontSize="22" Foreground="#D97706" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock x:Name="KpiWarn" Text="0" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="警告" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource KpiCardStyle}" Background="#EFF6FF" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🕐" FontSize="20" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock x:Name="KpiUnconfirmed" Text="0" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="未确认" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource KpiCardStyle}" Background="#FEF2F2">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✖" FontSize="20" Foreground="#DC2626" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0">
+                                    <TextBlock x:Name="KpiFail" Text="0" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="失败" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                    <!-- 事件时间线（对齐概念图 01 底部时间线：彩点 + 事件） -->
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource BorderLight}"
+                            BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,6,0,0">
+                        <StackPanel>
+                            <TextBlock Text="抓包与测试事件时间线" Style="{StaticResource SectionTitleStyle}"/>
+                            <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="EventTimeline">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                <Ellipse Width="8" Height="8" Margin="0,0,8,0"
+                                                         VerticalAlignment="Center"
+                                                         Fill="{Binding DotBrush}"/>
+                                                <TextBlock Text="{Binding Time}" FontSize="11"
+                                                           Foreground="{StaticResource TextSecondary}"
+                                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <TextBlock Text="{Binding Text}" FontSize="12"
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
                     <DataGrid x:Name="ResultGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding No}" Width="34"/>
                             <DataGridTextColumn Header="检查项" Binding="{Binding Name}" Width="*"/>
-                            <DataGridTextColumn Header="结论" Binding="{Binding Level}" Width="76"/>
+                            <DataGridTemplateColumn Header="结论" Width="92">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding LevelBrush}" CornerRadius="10"
+                                                Padding="9,2" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding Level}" FontSize="11" Foreground="White"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="100"/>
                             <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="100"/>
                             <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="76"/>

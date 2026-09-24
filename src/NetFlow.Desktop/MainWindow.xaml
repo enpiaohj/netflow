@@ -26,23 +26,23 @@
                                Foreground="{StaticResource TextSecondary}"/>
                 </StackPanel>
                 <StackPanel Margin="0,12,0,0">
-                    <RadioButton x:Name="NavOverview" Content="总览" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton x:Name="NavOverview" Content="🏠  总览" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" IsChecked="True" Checked="Nav_Checked" Tag="overview"/>
-                    <RadioButton Content="快速测试" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton Content="⚡  快速测试" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" Checked="Nav_Checked" Tag="quicktest"/>
-                    <RadioButton Content="场景诊断" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton Content="🧭  场景诊断" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" Checked="Nav_Checked" Tag="scenario"/>
-                    <RadioButton Content="抓包分析" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton Content="📡  抓包分析" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" Checked="Nav_Checked" Tag="capture"/>
-                    <RadioButton Content="服务与日志" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton Content="🖥  服务与日志" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" Checked="Nav_Checked" Tag="services"/>
-                    <RadioButton Content="本机网络" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton Content="🌐  本机网络" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" Checked="Nav_Checked" Tag="localnet"/>
-                    <RadioButton Content="批量任务" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton Content="🗂  批量任务" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" Checked="Nav_Checked" Tag="batch"/>
-                    <RadioButton Content="历史报告" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton Content="🕘  历史报告" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" Checked="Nav_Checked" Tag="history"/>
-                    <RadioButton Content="设置" Style="{StaticResource NavButtonStyle}"
+                    <RadioButton Content="⚙  设置" Style="{StaticResource NavButtonStyle}"
                                  GroupName="nav" Checked="Nav_Checked" Tag="settings"/>
                 </StackPanel>
             </DockPanel>
@@ -64,6 +64,9 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <TextBlock Text="源网卡：" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock x:Name="SourceAdapterText" Text="—"
+                                   Foreground="{StaticResource TextPrimary}" Margin="0,0,16,0"/>
                         <TextBlock Text="状态：" Foreground="{StaticResource TextSecondary}"/>
                         <TextBlock x:Name="StatusText" Text="就绪"
                                    Foreground="{StaticResource TextPrimary}"/>

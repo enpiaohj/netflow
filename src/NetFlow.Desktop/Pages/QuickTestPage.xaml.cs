@@ -197,10 +197,12 @@ public partial class QuickTestPage : UserControl
     private void AddRun(ProbeRun run)
     {
         _runs.Add(run);
+        var level = UiText.LevelOfRun(run);
         Results.Add(new ResultRow
         {
             Probe = run.Parameters.ProbeType.ToString(),
-            Level = UiText.LevelOf(run),
+            Level = UiText.Level(level),
+            LevelBrush = UiText.LevelBrush(level),
             Transport = run.Transport.ToString(),
             Protocol = run.Protocol.ToString(),
             Elapsed = UiText.Elapsed(run.Elapsed),
@@ -248,6 +250,7 @@ public record ResultRow
 {
     public required string Probe { get; init; }
     public required string Level { get; init; }
+    public required System.Windows.Media.Brush LevelBrush { get; init; }
     public required string Transport { get; init; }
     public required string Protocol { get; init; }
     public required string Elapsed { get; init; }

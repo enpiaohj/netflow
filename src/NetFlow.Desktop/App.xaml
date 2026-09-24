@@ -24,22 +24,29 @@
                 <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Padding" Value="14,10"/>
+                <Setter Property="Padding" Value="12,9"/>
                 <Setter Property="FontSize" Value="14"/>
                 <Setter Property="HorizontalContentAlignment" Value="Left"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="RadioButton">
-                            <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                    CornerRadius="6" Padding="{TemplateBinding Padding}"
-                                    Margin="8,2">
-                                <ContentPresenter VerticalAlignment="Center"/>
-                            </Border>
+                            <Grid Margin="8,2">
+                                <!-- 左缘选中条（对齐概念图导航高亮） -->
+                                <Rectangle x:Name="bar" Width="3" HorizontalAlignment="Left"
+                                           Fill="{StaticResource PrimaryBrush}" RadiusX="1.5" RadiusY="1.5"
+                                           Visibility="Collapsed"/>
+                                <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                        CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                        Margin="8,0,0,0">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="bd" Property="Background"
                                             Value="{StaticResource NavActiveBackground}"/>
+                                    <Setter TargetName="bar" Property="Visibility" Value="Visible"/>
                                     <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
@@ -133,6 +140,25 @@
                 <Setter Property="FontSize" Value="13"/>
             </Style>
 
+
+
+            <!-- KPI 统计卡（概念图 01 诊断概览） -->
+            <Style x:Key="KpiCardStyle" TargetType="Border">
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="14,8"/>
+                <Setter Property="MinWidth" Value="118"/>
+            </Style>
+            <!-- 结论徽章（概念图状态色 pill） -->
+            <Style x:Key="BadgePillStyle" TargetType="Border">
+                <Setter Property="CornerRadius" Value="10"/>
+                <Setter Property="Padding" Value="9,2"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="BadgeTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
             <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="15"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>

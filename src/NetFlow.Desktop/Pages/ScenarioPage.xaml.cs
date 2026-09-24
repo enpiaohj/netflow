@@ -172,19 +172,48 @@ public partial class ScenarioPage : UserControl
             : $"{run.Scenario.TemplateName}（{run.Scenario.Direction}）";
 
         int no = 1;
+        int pass = 0, warn = 0, unconfirmed = 0, fail = 0;
+        EventTimeline.Items.Clear();
         foreach (var p in run.Probes)
         {
-            var verdict = ConclusionEvaluator.Evaluate(p.Transport, p.Protocol);
+            var level = UiText.LevelOfRun(p);
+            switch (level)
+            {
+                case ConclusionLevel.Pass: pass++; break;
+                case ConclusionLevel.Warning: warn++; break;
+                case ConclusionLevel.Unconfirmed: unconfirmed++; break;
+                case ConclusionLevel.Fail: fail++; break;
+            }
             Rows.Add(new ScenarioStepRow
             {
-                No = no++,
+                No = no,
                 Name = p.Parameters.Extra.TryGetValue("__stepName", out var n) ? n : p.Parameters.ProbeType.ToString(),
-                Level = UiText.Level(verdict.Level),
+                Level = UiText.Level(level),
+                LevelBrush = UiText.LevelBrush(level),
                 Transport = p.Transport.ToString(),
                 Protocol = p.Protocol.ToString(),
                 Elapsed = UiText.Elapsed(p.Elapsed),
             });
+            foreach (var obs in p.Observations.Take(2))
+            {
+                EventTimeline.Items.Add(new TimelineItem
+                {
+                    Time = obs.ObservedUtc.LocalDateTime.ToString("HH:mm:ss.fff"),
+                    Text = "[" + p.Parameters.ProbeType + "] " + obs.Text,
+                    DotBrush = UiText.LevelBrush(level),
+                });
+            }
+            no++;
         }
+
+        // KPI 统计卡 + 汇总标题（概念图 01）
+        StatCards.Visibility = Visibility.Visible;
+        KpiPass.Text = pass.ToString();
+        KpiWarn.Text = warn.ToString();
+        KpiUnconfirmed.Text = unconfirmed.ToString();
+        KpiFail.Text = fail.ToString();
+        ResultTitle.Text += $"　共 {run.Probes.Count} 项检查，{pass} 项通过，{warn} 项警告，"
+            + $"{unconfirmed} 项未确认，{fail} 项失败";
 
         EvidenceBox.AppendText($"任务 ID：{run.Id}\n");
         EvidenceBox.AppendText($"解析地址：{string.Join("、", run.ResolvedAddresses)}\n");
@@ -245,7 +274,15 @@ public record ScenarioStepRow
     public required int No { get; init; }
     public required string Name { get; init; }
     public required string Level { get; init; }
+    public required System.Windows.Media.Brush LevelBrush { get; init; }
     public required string Transport { get; init; }
     public required string Protocol { get; init; }
     public required string Elapsed { get; init; }
+}
+
+public record TimelineItem
+{
+    public required string Time { get; init; }
+    public required string Text { get; init; }
+    public required System.Windows.Media.Brush DotBrush { get; init; }
 }

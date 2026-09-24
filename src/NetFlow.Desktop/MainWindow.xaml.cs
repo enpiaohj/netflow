@@ -18,6 +18,18 @@ public partial class MainWindow : Window
         ElevatedText.Text = NetworkInterfaceHelper.IsElevated()
             ? "管理员权限：可用（抓包可用）"
             : "普通权限：抓包将通过 UAC 按需提升";
+        try
+        {
+            var adapter = NetworkInterfaceHelper.GetPreferredAdapterName(null);
+            var profile = NetFlow.Windows.NetworkProfileCollector.CollectAdapters()
+                .FirstOrDefault(a => a.Name == adapter);
+            var ip = profile?.Ipv4Addresses.FirstOrDefault();
+            SourceAdapterText.Text = adapter is null ? "—" : $"{adapter}（{ip ?? "—"}）";
+        }
+        catch
+        {
+            SourceAdapterText.Text = "—";
+        }
 
         AppServices.Instance.StatusMessage += (_, msg) => Dispatcher.BeginInvoke(() =>
             StatusText.Text = msg);

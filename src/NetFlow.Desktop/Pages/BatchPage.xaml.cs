@@ -168,7 +168,8 @@ public partial class BatchPage : UserControl
             var verdict = ConclusionEvaluator.Evaluate(run.Transport, run.Protocol);
             Rows[Rows.IndexOf(row)] = row with
             {
-                Level = LevelText(verdict.Level),
+                Level = UiText.Level(verdict.Level),
+                LevelBrush = UiText.LevelBrush(verdict.Level),
                 Transport = run.Transport.ToString(),
                 Elapsed = run.Elapsed is { } e ? $"{(int)e.TotalMilliseconds} ms" : "—",
                 Detail = verdict.Rationale,
@@ -184,23 +185,14 @@ public partial class BatchPage : UserControl
         }
     }
 
-    private static string LevelText(ConclusionLevel level) => level switch
-    {
-        ConclusionLevel.Pass => "通过",
-        ConclusionLevel.Warning => "警告",
-        ConclusionLevel.Fail => "失败",
-        ConclusionLevel.Unconfirmed => "未确认",
-        ConclusionLevel.NotChecked => "未检查",
-        ConclusionLevel.Skipped => "跳过",
-        ConclusionLevel.Canceled => "已取消",
-        _ => level.ToString(),
-    };
 }
 
 public record BatchRow
 {
     public required string Target { get; init; }
     public required string Level { get; init; }
+    public System.Windows.Media.Brush LevelBrush { get; init; } =
+        new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x94, 0xA3, 0xB8));
     public required string Transport { get; init; }
     public required string Protocol { get; init; }
     public required string Elapsed { get; init; }

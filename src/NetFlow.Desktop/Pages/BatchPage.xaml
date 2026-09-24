@@ -46,7 +46,16 @@
                 <DataGrid x:Name="BatchGrid" Style="{StaticResource DataGridStyle}" Margin="0,6,0,0">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="目标" Binding="{Binding Target}" Width="220"/>
-                        <DataGridTextColumn Header="结论" Binding="{Binding Level}" Width="90"/>
+                        <DataGridTemplateColumn Header="结论" Width="92">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="{Binding LevelBrush}" CornerRadius="10"
+                                            Padding="9,2" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding Level}" FontSize="11" Foreground="White"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="120"/>
                         <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="90"/>
                         <DataGridTextColumn Header="说明" Binding="{Binding Detail}" Width="*"/>

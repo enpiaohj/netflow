@@ -75,7 +75,16 @@
                               SelectionChanged="ResultRow_Selected">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="探针" Binding="{Binding Probe}" Width="110"/>
-                            <DataGridTextColumn Header="结论" Binding="{Binding Level}" Width="80"/>
+                            <DataGridTemplateColumn Header="结论" Width="92">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding LevelBrush}" CornerRadius="10"
+                                                Padding="9,2" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding Level}" FontSize="11" Foreground="White"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="传输" Binding="{Binding Transport}" Width="110"/>
                             <DataGridTextColumn Header="协议" Binding="{Binding Protocol}" Width="110"/>
                             <DataGridTextColumn Header="耗时" Binding="{Binding Elapsed}" Width="80"/>
